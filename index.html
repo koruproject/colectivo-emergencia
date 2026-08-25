@@ -1,0 +1,2148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>colectivo.emergencia — registro del sector cultural</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   colectivo.emergencia — sistema de maqueta v0.1
+   Tokens → Retícula → Componentes → Vistas → Escalado 1400→8K
+   ============================================================ */
+
+:root{
+  /* Color: acromático + una sola señal funcional */
+  --ink:#0B0B0B;        /* texto principal */
+  --steel:#6B6B6B;      /* texto secundario (AA sobre papel) */
+  --mute:#9A9A9A;       /* texto terciario / inactivo */
+  --hair:#DCDCDC;       /* filetes */
+  --hair-2:#EDEDED;     /* filetes internos */
+  --fill:#E7E7E7;       /* caja de imagen */
+  --paper:#FCFCFC;
+  --signal:#FF4D00;     /* SOLO estado laboral, foco y activo */
+
+  /* Tipografía */
+  --sans:'Schibsted Grotesk','Helvetica Neue',Helvetica,Arial,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+
+  --fs-code:0.6875rem;  /* 11px — códigos, etiquetas */
+  --fs-meta:0.8125rem;  /* 13px — metadatos */
+  --fs-body:0.9375rem;  /* 15px — cuerpo */
+  --fs-lead:1.0625rem;  /* 17px — entradilla */
+
+  /* Retícula */
+  --cols:12;
+  --gut:1.5rem;
+  --mar:2rem;
+  --rail:15rem;
+  --prev:20rem;
+  --max:118rem;         /* tope del contenedor, en rem → escala con la raíz */
+  --hairline:1px;
+
+  /* Movimiento: una sola curva, tres duraciones. Nada rebota. */
+  --e:cubic-bezier(.22,.68,.28,1);      /* salida rápida, aterrizaje suave */
+  --e-io:cubic-bezier(.65,0,.35,1);
+  --t1:120ms;   /* color y opacidad */
+  --t2:220ms;   /* filetes, filas, botones */
+  --t3:380ms;   /* entrada de bloques */
+  --t4:460ms;   /* revelado de imagen */
+}
+
+/* --- Escalado tipográfico por tramos -----------------------------------
+   El layout NO se estira: se amplía proporcionalmente. La raíz sube por
+   tramo y el tope del contenedor está en rem, así el ritmo suizo se
+   conserva de 1400 a 8K. --------------------------------------------- */
+html{font-size:15px;-webkit-text-size-adjust:100%}
+@media (min-width:1200px){ html{font-size:15.5px} }
+@media (min-width:1600px){ html{font-size:16.5px} }
+@media (min-width:2000px){ html{font-size:18px} }
+@media (min-width:2560px){ html{font-size:21px} }
+@media (min-width:3200px){ html{font-size:25px} }
+@media (min-width:3840px){ html{font-size:29px} }
+@media (min-width:5120px){ html{font-size:37px} }
+@media (min-width:7680px){ html{font-size:52px} }
+@media (min-width:2560px){ :root{--hairline:1.5px} }
+@media (min-width:5120px){ :root{--hairline:2px} }
+
+/* ============================ BREAKPOINTS ABAJO DE 1400 ================
+   El sistema de arriba escala HACIA ARRIBA desde 1400 (portátil/desktop)
+   hasta 8K. Esta sección resuelve hacia ABAJO: portátil chico, tablet,
+   celular y celular chico. No son categorías de dispositivo rígidas —
+   cada quiebre responde a dónde el contenido deja de caber cómodo, que
+   es como ya estaban pensados 1600/1100/900/820/760/700 más arriba.
+
+   Portátil chico   ≥1100px  — layout de escritorio sin cambios de fondo
+   Tablet            641–1099px — rail se colapsa a filtros horizontales
+   Celular           381–640px  — tabla en bloques, formulario a 1 columna
+   Celular chico     ≤380px     — márgenes mínimos, densidad máxima
+   ========================================================================= */
+@media (max-width:640px){
+  :root{
+    --mar:1.15rem; --gut:1rem;
+    /* Dos tamaños de espaciado vertical, no seis valores sueltos.
+       tight junta elementos que son parte del mismo grupo (título del
+       rail, chips de filtro, eyebrow); loose marca un quiebre real de
+       sección (cabecera→contenido, titular→cuerpo). loose subió de
+       2rem a 2.4rem: un poco más de aire entre conjuntos, sin volverse
+       espacioso — tight se queda igual, porque ensancharlo habría
+       aflojado justo lo que debe leerse como un solo bloque. */
+    --sp-tight:1.25rem; --sp-loose:2.4rem;
+  }
+}
+@media (max-width:380px){
+  :root{ --mar:.85rem; }
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:var(--sans);font-size:var(--fs-body);line-height:1.5;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  display:flex;flex-direction:column;min-height:100vh;
+}
+main{flex:1 0 auto}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--signal);outline-offset:3px}
+
+/* --- Utilidades tipográficas ------------------------------------------- */
+.code{
+  font-family:var(--mono);font-size:var(--fs-code);font-weight:500;
+  letter-spacing:.09em;text-transform:uppercase;color:var(--steel);
+}
+.lead{font-size:var(--fs-lead);line-height:1.45;max-width:46ch;color:var(--ink);margin:0}
+@media (max-width:640px){
+  /* El sistema solo tiene cuatro tamaños fijos — nada de inventar un
+     quinto para este caso. En vez de eso, el lead usa --fs-body (el
+     que ya existe un escalón abajo) en lugar de --fs-lead. */
+  .lead{font-size:var(--fs-body)}
+}
+.dim{color:var(--steel)}
+
+/* --- Contenedor -------------------------------------------------------- */
+.shell{width:min(100% - (var(--mar) * 2), var(--max));margin-inline:auto}
+
+/* ============================ CABECERA ================================ */
+.masthead{
+  position:sticky;top:0;z-index:40;background:var(--paper);
+  border-bottom:var(--hairline) solid var(--hair);
+}
+.masthead__in{display:flex;align-items:baseline;justify-content:space-between;gap:var(--gut);padding:1.15rem 0 1rem}
+@media (max-width:640px){
+  .masthead__in{flex-wrap:wrap;row-gap:.7rem;padding:.9rem 0 .85rem;align-items:center}
+  .mainnav{gap:1.1rem}
+}
+.wordmark{font-size:1.5rem;font-weight:600;letter-spacing:-.015em;color:var(--mute);line-height:1}
+.wordmark b{font-weight:700;color:var(--ink)}
+.wordmark__dot{
+  display:inline-block;width:.42rem;height:.42rem;margin:0 .1rem;vertical-align:.06rem;
+  background:var(--signal);font-size:0;line-height:0;color:transparent;   /* oculta el "." real; el cuadrado es puramente visual */
+}
+/* Este override tiene que vivir DESPUÉS de la regla base de arriba —
+   misma especificidad (.wordmark), así que gana quien aparezca último
+   en el archivo. Ponerlo antes (como estaba) hacía que la regla base
+   lo pisara sin avisar: el mismo tipo de bug que ya encontramos en
+   .c-code, esta vez por orden de aparición en vez de especificidad. */
+@media (max-width:640px){
+  .wordmark{font-size:1.05rem}                        /* 30% menos que 1.5rem */
+  .wordmark__dot{width:.3rem;height:.3rem;margin:0 .07rem}  /* mismo 30%, para que no se vea desproporcionado frente al texto ya reducido */
+}
+.mainnav{display:flex;gap:1.6rem;align-items:center;flex-wrap:wrap}
+.mainnav button{position:relative;font-size:var(--fs-meta);color:var(--steel);padding-bottom:.2rem;transition:color var(--t2) var(--e)}
+.mainnav button::after{
+  content:"";position:absolute;left:0;right:0;bottom:0;height:var(--hairline);background:currentColor;
+  transform:scaleX(0);transform-origin:0 50%;transition:transform var(--t2) var(--e);
+}
+.mainnav button:hover{color:var(--ink)}
+.mainnav button:hover::after{transform:scaleX(1)}
+.mainnav button[aria-current="page"]{color:var(--ink)}
+.mainnav button[aria-current="page"]::after{transform:scaleX(1)}
+
+/* CTA reutilizable: caja sólida, esquinas rectas — nunca redondeadas,
+   como el resto del sitio. Naranja en reposo (no solo en hover) porque
+   es la única acción que de verdad queremos que alguien tome desde
+   cualquier pantalla. Invierte a tinta en hover, el espejo exacto del
+   botón .btn (que sale de negro y llega a naranja). Selector
+   "button.navcta" en vez de ".navcta" a secas: iguala la especificidad
+   de ".mainnav button" para que gane sin importar si vive dentro del
+   header o del menú de celular. */
+button.navcta{
+  display:inline-block;font-size:var(--fs-meta);
+  padding:.5rem 1.05rem;background:var(--signal);color:var(--ink);font-weight:600;
+  transition:background-color var(--t2) var(--e),color var(--t2) var(--e);
+}
+button.navcta::after{content:none}
+button.navcta:hover{background:var(--ink);color:var(--paper)}
+button.navcta:active{transform:translateY(1px)}
+button.navcta--block{display:block;width:100%;text-align:center;padding:.85rem 1.2rem;font-size:1rem}
+
+/* — botón hamburguesa: solo aparece en celular, oculta la nav inline — */
+.hamburger{display:none;padding:.3rem;color:var(--ink)}
+.hamburger svg{width:1.4rem;height:auto;display:block}
+.hamburger line{stroke:currentColor;stroke-width:1.3;stroke-linecap:square}
+@media (max-width:640px){
+  .mainnav{display:none}
+  .hamburger{display:block;padding:.42rem}            /* compensa el ícono más chico: el área de toque no debe bajar de ~24px */
+  .hamburger svg{width:1.12rem}                       /* 20% menos que 1.4rem */
+}
+
+/* — menú de celular: pantalla completa, entra desde la derecha —
+   cabecera (logo + cerrar), lista de nav arriba, CTA y redes abajo
+   del todo. El mismo esqueleto de un menú hamburguesa típico, con
+   nuestra tipografía, esquinas rectas y el naranja de siempre. */
+.mobilemenu{
+  position:fixed;inset:0;z-index:80;background:var(--paper);
+  display:flex;flex-direction:column;visibility:hidden;
+  transform:translateX(100%);transition:transform var(--t3) var(--e),visibility 0s var(--t3);
+}
+.mobilemenu.is-open{visibility:visible;transform:translateX(0);transition:transform var(--t3) var(--e)}
+.mobilemenu__head{
+  flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;
+  padding:1.15rem var(--mar) 1rem;border-bottom:var(--hairline) solid var(--hair);
+}
+.mobilemenu__nav{flex:0 0 auto;display:flex;flex-direction:column;padding:1.5rem var(--mar) 0}
+.mobilemenu__link{
+  text-align:left;font-size:1.3rem;font-weight:500;letter-spacing:-.01em;color:var(--ink);
+  padding:.75rem 0;border-bottom:var(--hairline) solid var(--hair-2);
+}
+.mobilemenu__bottom{
+  margin-top:auto;flex:0 0 auto;display:flex;flex-direction:column;gap:1.2rem;
+  padding:1.4rem var(--mar) calc(1.4rem + env(safe-area-inset-bottom));
+}
+.mobilemenu__social{display:flex;gap:1.3rem;align-items:baseline}
+
+/* ============================ ESTRUCTURA ============================== */
+.frame-grid{
+  display:grid;gap:var(--gut);
+  grid-template-columns:var(--rail) minmax(0,1fr);
+  align-items:start;padding:3.2rem 0 5rem;
+}
+.frame-grid--triple{grid-template-columns:var(--rail) minmax(0,1fr)} /* la 3ª col entra ≥1600 */
+@media (min-width:1600px){
+  .frame-grid--triple{grid-template-columns:var(--rail) minmax(0,1fr) var(--prev)}
+}
+@media (max-width:1100px){
+  .frame-grid,.frame-grid--triple{grid-template-columns:minmax(0,1fr)}
+}
+
+.rail{position:sticky;top:5.5rem}
+@media (max-width:1100px){ .rail{position:static} }
+
+.rail__title{font-size:var(--fs-meta);line-height:1.35;max-width:14ch;margin:0 0 1.6rem}
+@media (max-width:640px){
+  /* El max-width:14ch tenía sentido en el sidebar angosto de escritorio
+     (15rem fijo). En móvil el rail ya ocupa el ancho completo del
+     contenido, así que esa restricción es lo único que fuerza una
+     tercera línea innecesaria — se suelta y el texto cae solo a dos. */
+  .rail__title{max-width:none;margin-bottom:var(--sp-tight)}
+  .frame-grid{padding-top:var(--sp-loose);gap:var(--sp-tight)}
+}
+
+.formsample{
+  display:flex;gap:1rem;align-items:flex-start;max-width:28rem;
+  border:var(--hairline) solid var(--hair);padding:1rem 1.1rem;
+}
+.formsample .card__frame{width:5.5rem;flex:0 0 auto;margin-bottom:0;background-size:cover;background-position:center}
+.formsample .card__name{font-size:var(--fs-meta)}
+.formsample .card__meta{font-size:var(--fs-code)}
+.rail__group{margin-bottom:1.5rem}
+.rail__label{display:block;margin-bottom:.6rem}
+.rail__list{list-style:none;margin:0;padding:0}
+.rail__list li{margin-bottom:.28rem}
+.rail__list a,.filter{
+  display:block;width:100%;text-align:left;font-size:var(--fs-meta);
+  color:var(--mute);line-height:1.4;
+}
+.rail__list a,.filter{transition:color var(--t2) var(--e)}
+.rail__list a:hover,.filter:hover{color:var(--ink)}
+.rail__list a[aria-current="page"]{color:var(--ink);font-weight:600}
+.filter[aria-pressed="true"]{color:var(--ink);font-weight:600}
+.filter::before{
+  content:"—";display:inline-block;color:var(--signal);overflow:hidden;white-space:nowrap;
+  max-width:0;opacity:0;margin-right:0;transform:translateX(-.25em);
+  transition:max-width var(--t2) var(--e),opacity var(--t2) var(--e),
+             margin-right var(--t2) var(--e),transform var(--t2) var(--e);
+}
+.filter[aria-pressed="true"]::before{max-width:1.4em;opacity:1;margin-right:.32em;transform:none}
+
+.backlink{color:var(--ink)}
+.backlink__arrow{display:inline-block;color:var(--signal);transition:transform var(--t2) var(--e)}
+.backlink:hover .backlink__arrow{transform:translateX(-.15rem)}
+@media (max-width:1100px){
+  /* En texto plano, sin marco, "Volver al índice" no siempre se lee
+     como botón — se confirma con la mano en pantallas chicas. Un
+     marco y una flecha más grande (28%, dentro del 20-30% pedido) lo
+     dejan claro. Antes esto solo entraba a 640px, pero "Otros
+     registros" ya aparece desde 1100px — subir el breakpoint evita
+     que en tablet uno de los dos botones tenga marco y el otro no.
+     Ancho completo en los dos: son el mismo par de acciones de
+     navegación, una debajo de la otra, y deben leerse como un
+     conjunto — mismo ancho, misma altura, mismo marco. */
+  .backlink{
+    display:flex;align-items:center;gap:.5rem;width:100%;
+    padding:.65rem 1.1rem;border:var(--hairline) solid var(--hair);
+    transition:border-color var(--t2) var(--e);
+  }
+  .backlink:hover,.backlink:active{border-color:var(--ink)}
+  .backlink__arrow{font-size:1.28em}
+}
+
+/* — chips disparadores de filtro (tablet/celular): abren la hoja — */
+.filtertrigs{display:none;flex-wrap:wrap;gap:.6rem}
+/* .peopletrig(-wrap) comparte esta apariencia (mismo "dropdown parecido
+   a los filtros" que pidió el usuario) pero es una clase aparte a
+   propósito: si comparte .filtertrig-wrap, syncFilterUI() lo recorre
+   esperando un data-group con Set en `state`, y como el disparador de
+   "otros registros" no filtra nada, revienta con "Cannot read
+   properties of undefined (reading 'size')". Ya pasó una vez. */
+.filtertrig-wrap,.peopletrig-wrap{
+  display:inline-flex;align-items:stretch;border:var(--hairline) solid var(--hair);
+  transition:border-color var(--t2) var(--e);
+}
+.filtertrig-wrap[data-active="true"]{border-color:var(--ink)}
+.filtertrig,.peopletrig{
+  padding:.42rem .8rem;font-size:var(--fs-meta);color:var(--steel);
+  transition:color var(--t2) var(--e),transform var(--t1) var(--e);white-space:nowrap;
+}
+.filtertrig:active,.peopletrig:active{transform:scale(.96)}
+.filtertrig-wrap[data-active="true"] .filtertrig{color:var(--ink);font-weight:600}
+.filtertrig__count{font-family:var(--mono);font-size:var(--fs-code);margin-left:.35rem;color:var(--ink)}
+/* display:none→inline-grid no se puede animar — la propiedad display
+   no admite transición. Mismo truco que .filter::before (el guion
+   naranja de los filtros de escritorio): max-width en 0 lo mantiene
+   sin ocupar espacio en reposo, y crece con transición al activarse. */
+.filtertrig__x{
+  display:inline-grid;place-items:center;overflow:hidden;
+  max-width:0;opacity:0;padding:0;color:var(--mute);
+  transition:max-width var(--t2) var(--e),opacity var(--t2) var(--e),
+             padding var(--t2) var(--e),color var(--t2) var(--e),transform var(--t1) var(--e);
+}
+.filtertrig-wrap[data-active="true"] .filtertrig__x{max-width:1.6rem;opacity:1;padding:0 .65rem 0 0}
+.filtertrig__x:hover{color:var(--ink)}
+.filtertrig__x:active{transform:scale(.85)}
+.filtertrig__x svg{width:.55rem;height:.55rem;overflow:visible}
+.filtertrig__x line{stroke:currentColor;stroke-width:1.3;stroke-linecap:square}
+
+@media (max-width:1100px){
+  .filterbar > .rail__group,.filterbar > .clearwrap{display:none}
+  .filtertrigs{display:flex}
+}
+@media (max-width:640px){
+  /* En tablet los tres chips se quedan agrupados a la izquierda — hay
+     espacio de sobra y agruparlos se lee bien. En celular ese mismo
+     espacio suelto a la derecha se ve como un descuido, no como aire
+     intencional. Cada chip crece en partes iguales para llenar el
+     ancho completo entre los tres, alineados entre sí. */
+  .filtertrig-wrap{flex:1 1 0}
+  .filtertrig{flex:1;text-align:center}
+}
+
+/* — hoja de filtros: sube desde el borde inferior, pie fijo con acciones — */
+.sheet{position:fixed;inset:0;z-index:70;display:none}
+.sheet.is-open{display:block}
+.sheet__scrim{
+  position:absolute;inset:0;width:100%;border:0;margin:0;padding:0;
+  background:rgba(11,11,11,.42);cursor:default;opacity:0;
+  transition:opacity var(--t3) var(--e);
+}
+.sheet.is-open .sheet__scrim{opacity:1}
+.sheet__panel{
+  position:absolute;left:0;right:0;bottom:0;max-height:82vh;
+  background:var(--paper);border-top:var(--hairline) solid var(--ink);
+  display:flex;flex-direction:column;
+  transform:translateY(100%);transition:transform var(--t3) var(--e);
+}
+.sheet.is-open .sheet__panel{transform:translateY(0)}
+.sheet__head{
+  flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;
+  padding:1rem var(--mar) .9rem;border-bottom:var(--hairline) solid var(--hair);
+}
+.sheet__body{flex:1 1 auto;overflow-y:auto;padding:1.1rem var(--mar)}
+.sheet__group{margin-bottom:1.7rem}
+.sheet__group:last-child{margin-bottom:0}
+.sheet__group .rail__label{display:block;margin-bottom:.5rem}
+.sheet__opt{
+  display:flex;align-items:center;gap:.75rem;padding:.65rem 0;
+  border-bottom:var(--hairline) solid var(--hair-2);font-size:var(--fs-body);cursor:pointer;
+  transition:background-color var(--t1) var(--e);
+}
+.sheet__opt:active{background:var(--hair-2)}
+.sheet__group .sheet__opt:last-child{border-bottom:0}
+.sheet__opt input{width:1.15rem;height:1.15rem;flex:0 0 auto;accent-color:var(--signal)}
+/* Las filas de la hoja entran escalonadas al abrir — mismo rowIn que
+   ya anima los resultados filtrados de la tabla, para que se sienta
+   como el mismo sitio y no como un componente aparte pegado encima. */
+.js .sheet__opt.is-in{animation:rowIn var(--t2) var(--e) both;animation-delay:var(--d,0ms)}
+.sheet__foot{
+  flex:0 0 auto;display:flex;gap:.7rem;
+  padding:.9rem var(--mar) calc(1.1rem + env(safe-area-inset-bottom));
+  border-top:var(--hairline) solid var(--hair);
+}
+.sheet__foot .btn{flex:1 1 auto;text-align:center}
+.sheet__foot .filter{flex:0 0 auto;width:auto}
+
+/* Filas de la hoja de "otros registros": mismo .sheet__opt de los
+   filtros, pero como <button> de navegación en vez de <label> con
+   checkbox — hay que resetear los estilos nativos de botón a mano. */
+.sheet__personrow{
+  width:100%;text-align:left;background:none;font:inherit;
+  border:0;border-bottom:var(--hairline) solid var(--hair-2);
+}
+.sheet__personrow .code{width:4rem;flex:0 0 auto}
+.sheet__personrow[aria-current="page"]{font-weight:600}
+#people-trigwrap{display:none}
+@media (max-width:1100px){
+  .rail__group{margin-bottom:1rem}
+  .rail__list--h{display:flex;gap:.9rem;overflow-x:auto;padding-bottom:.4rem;scrollbar-width:thin}
+  .rail__list--h li{margin:0;flex:0 0 auto}
+  /* El slider horizontal de handles se reemplaza por el disparador +
+     hoja, mismo patrón que los filtros — más fácil de tocar y no deja
+     "adivinar" con scroll si hay más nombres fuera de pantalla.
+     Mismo ancho y alto que "Volver al índice" — los dos botones viven
+     uno debajo del otro y deben leerse como el mismo par de acciones,
+     no como dos tamaños sueltos. */
+  #rail-people{display:none}
+  #people-trigwrap{display:flex;width:100%}
+  #people-trigwrap .peopletrig{width:100%;padding:.65rem 1.1rem}
+
+  /* La barra de filtros queda fija justo debajo de la cabecera al
+     hacer scroll por la lista — cambiar un filtro no debería obligar
+     a volver arriba. --mh la calcula JS con la altura real de la
+     cabecera (que puede crecer si la nav envuelve en celular). */
+  .filterbar{
+    position:sticky;top:var(--mh,3.6rem);z-index:20;
+    background:var(--paper);padding-top:.9rem;margin-top:-.2rem;
+    border-bottom:var(--hairline) solid var(--hair);
+  }
+}
+
+/* ============================ ÍNDICE ================================== */
+.idx__head{border-bottom:var(--hairline) solid var(--hair);padding-bottom:2.8rem;margin-bottom:2.2rem}
+.idx__h1{
+  font-size:clamp(1.9rem,3.4vw,2.9rem);font-weight:600;letter-spacing:-.018em;
+  line-height:1.02;margin:1.6rem 0 2rem;max-width:19ch;
+}
+@media (max-width:640px){
+  /* margin-bottom (2rem) ya coincide con --sp-loose — no hace falta
+     tocarlo. Solo el margin-top (1.6rem) rompía la escala de dos
+     tamaños; se ajusta a --sp-tight junto con el resto del grupo. */
+  .idx__h1{margin-top:var(--sp-tight)}
+}
+.idx__tools{display:flex;align-items:center;gap:1.2rem;flex-wrap:wrap;margin-top:3.6rem}
+@media (max-width:640px){
+  /* 3.6rem era el salto más grande de toda la pila — desproporcionado
+     en un teléfono. Se empareja con --sp-loose, igual que el resto de
+     los quiebres de sección de este grupo. */
+  .idx__tools{margin-top:var(--sp-loose)}
+}
+.search{flex:1 1 14rem;min-width:10rem}
+.search input{
+  width:100%;font:inherit;font-size:var(--fs-meta);color:var(--ink);
+  background:none;border:0;border-bottom:var(--hairline) solid var(--ink);
+  padding:.35rem 0;border-radius:0;
+}
+.search input::placeholder{color:var(--mute)}
+.search input:focus{outline:0;border-bottom-color:var(--signal)}
+.viewtoggle{display:flex;gap:.9rem;margin-left:auto}
+.viewtoggle button{font-family:var(--mono);font-size:var(--fs-code);letter-spacing:.09em;text-transform:uppercase;color:var(--mute)}
+.viewtoggle button[aria-pressed="true"]{color:var(--ink)}
+
+/* — tabla de registro (vista por defecto) — */
+.reg{width:100%;border-collapse:collapse;table-layout:fixed}
+.reg th{
+  text-align:left;font-family:var(--mono);font-size:var(--fs-code);font-weight:500;
+  letter-spacing:.09em;text-transform:uppercase;color:var(--mute);
+  padding:.55rem .8rem .55rem 0;border-bottom:var(--hairline) solid var(--hair);
+}
+.reg td{padding:.7rem .8rem .7rem 0;border-bottom:var(--hairline) solid var(--hair-2);vertical-align:baseline}
+.reg tbody tr{transition:background-color .12s ease;cursor:pointer}
+.reg tbody tr:hover,.reg tbody tr.is-active{background:#F2F2F2}
+.reg .c-code{width:5.5rem}
+.reg .c-city{width:7rem}
+.reg .c-state{width:8.5rem;padding-right:0}
+.reg .c-name a{
+  font-weight:500;letter-spacing:-.01em;
+  background-image:linear-gradient(var(--ink),var(--ink));background-repeat:no-repeat;
+  background-position:0 100%;background-size:0 var(--hairline);
+  transition:background-size var(--t2) var(--e);
+}
+.reg tbody tr:hover .c-name a,.reg .c-name a:focus-visible{background-size:100% var(--hairline)}
+.reg .c-handle{display:block;font-family:var(--mono);font-size:var(--fs-code);color:var(--mute);letter-spacing:.04em;margin-top:.15rem}
+.reg .c-pract{font-size:var(--fs-meta);color:var(--steel)}
+.reg .c-city span{font-size:var(--fs-meta);color:var(--steel)}
+.thumb-inline{display:none}
+@media (max-width:820px){
+  .reg thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  .reg,.reg tbody,.reg tr,.reg td{display:block;width:auto}
+  .reg tr{position:relative;padding:.95rem 0 1rem 4.6rem;border-bottom:var(--hairline) solid var(--hair-2)}
+  .reg td{border:0;padding:0 0 .18rem}
+  /* position:absolute para .c-code vive más abajo, junto a la barra de
+     señal de hover — necesita ganarle en especificidad a esa regla, no
+     tiene sentido declararlo dos veces en dos sitios distintos. */
+  .reg .c-code{left:0;top:1rem;width:auto}
+  .thumb-inline{display:block;position:absolute;left:0;top:2.4rem;width:3.6rem;aspect-ratio:1;background:var(--fill)}
+}
+
+/* estado laboral */
+.state{font-family:var(--mono);font-size:var(--fs-code);letter-spacing:.07em;text-transform:uppercase;white-space:nowrap}
+.state::before{content:"";display:inline-block;width:.4em;height:.4em;margin-right:.55em;vertical-align:.12em;background:var(--mute)}
+.state[data-s="disponible"]{color:var(--ink)}
+.state[data-s="disponible"]::before{background:var(--signal)}
+.state[data-s="proyecto"]{color:var(--steel)}
+.state[data-s="obra"]{color:var(--steel)}
+.state[data-s="empleo"]{color:var(--steel)}
+
+/* — vista cuadrícula — */
+.grid-view{display:none;grid-template-columns:repeat(auto-fill,minmax(15rem,1fr));gap:var(--gut)}
+@media (max-width:640px){
+  .grid-view{grid-template-columns:repeat(auto-fill,minmax(8.5rem,1fr))}
+}
+.grid-view.is-on{display:grid}
+.reg-wrap.is-off{display:none}
+.card__frame{background:var(--fill);aspect-ratio:1/1;margin-bottom:.6rem;position:relative}
+.card__name{font-weight:500;font-size:var(--fs-body);letter-spacing:-.01em}
+.card__meta{font-size:var(--fs-meta);color:var(--steel);margin-top:.1rem}
+.card__state{margin-top:.4rem}
+
+/* — panel de previsualización (3ª columna, ≥1600) — */
+.preview{display:none}
+@media (min-width:1600px){
+  .preview{display:block;position:sticky;top:5.5rem;border-left:var(--hairline) solid var(--hair);padding-left:var(--gut)}
+}
+.preview__frame{background:var(--fill);aspect-ratio:4/5;margin-bottom:.7rem}
+.preview__empty{font-size:var(--fs-meta);color:var(--mute);line-height:1.4}
+
+/* ============================ FICHA =================================== */
+.ficha__h1{
+  font-size:clamp(2rem,3.8vw,3.1rem);font-weight:700;letter-spacing:-.022em;
+  line-height:1;margin:.5rem 0 2rem;
+}
+.ficha__cols{
+  display:grid;gap:var(--gut);grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);
+  padding-bottom:2.6rem;border-bottom:var(--hairline) solid var(--hair);
+}
+@media (max-width:900px){ .ficha__cols{grid-template-columns:minmax(0,1fr)} }
+.datos{margin:0}
+.datos div{display:grid;grid-template-columns:5.5rem minmax(0,1fr);gap:.8rem;padding:.42rem 0;border-bottom:var(--hairline) solid var(--hair-2)}
+.datos dt{font-family:var(--mono);font-size:var(--fs-code);letter-spacing:.09em;text-transform:uppercase;color:var(--mute);padding-top:.12rem}
+.datos dd{margin:0;font-size:var(--fs-meta)}
+.datos a{border-bottom:var(--hairline) solid var(--hair);padding-bottom:.05em}
+.datos a:hover{border-bottom-color:var(--ink)}
+.bio{font-size:var(--fs-body);line-height:1.6;max-width:58ch;margin:0 0 1.4rem}
+.statement{margin-bottom:1.7rem}
+.statement .code{display:block;margin-bottom:.6rem}
+.statement .bio{margin-bottom:0}
+
+.cta{margin-top:1.5rem;display:flex;gap:.7rem;flex-wrap:wrap}
+@media (max-width:640px){
+  /* Antes: .5rem/2rem/2.6rem/1.4rem/1.7rem/1.5rem — seis valores
+     sueltos sin relación entre sí, la misma clase de ruido que ya
+     resolvimos en el índice. Se reparten entre los mismos dos tokens:
+     tight junta lo que es parte del mismo bloque de información
+     (bio→acerca→trayectoria→cta), loose marca los dos quiebres reales
+     (título→datos, fin de perfil→galería de obra). */
+  .ficha__h1{margin-bottom:var(--sp-loose)}
+  .ficha__cols{padding-bottom:var(--sp-loose)}
+  .bio{margin-bottom:var(--sp-tight)}
+  .statement{margin-bottom:var(--sp-tight)}
+  .cta{margin-top:var(--sp-tight)}
+}
+.btn{
+  position:relative;isolation:isolate;overflow:hidden;
+  display:inline-block;font-size:var(--fs-meta);padding:.55rem 1.1rem;
+  border:var(--hairline) solid var(--ink);color:var(--ink);
+  transition:color var(--t2) var(--e),border-color var(--t2) var(--e);
+}
+.btn::before{
+  content:"";position:absolute;inset:0;z-index:-1;background:var(--signal);
+  transform:scaleY(0);transform-origin:50% 100%;transition:transform var(--t2) var(--e);
+}
+.btn:hover::before{transform:scaleY(1)}
+.btn:active{transform:translateY(1px)}
+.btn--ghost{border-color:var(--hair);color:var(--steel)}
+.btn--ghost::before{display:none}
+.btn--ghost:hover{border-color:var(--ink);color:var(--ink)}
+
+/* obras */
+.obras{display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:2.4rem var(--gut);padding:2.6rem 0 0}
+@media (max-width:640px){ .obras{padding-top:var(--sp-loose)} }
+.obra{display:flex;flex-direction:column;gap:.55rem}
+.obra--full{grid-column:span 12}
+.obra--half{grid-column:span 6}
+.obra--third{grid-column:span 4}
+@media (max-width:760px){ .obra--half,.obra--third{grid-column:span 12} }
+.obra__cap{display:flex;gap:.9rem;align-items:baseline;font-size:var(--fs-meta);color:var(--steel)}
+.obra__num{font-family:var(--mono);font-size:var(--fs-code);letter-spacing:.09em;color:var(--ink);flex:0 0 auto}
+.obra__cap b{font-weight:500;color:var(--ink)}
+.obra__frame{background:var(--fill);position:relative}
+
+/* ============================ SUBIDA DE IMÁGENES ======================= */
+/* Input real, oculto visualmente pero accesible por teclado (no display:none,
+   así el <label> asociado sigue abriendo el selector de archivos). */
+.file-input{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+.uploadbox{display:block;cursor:pointer;overflow:hidden}
+.uploadbox__ph{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:.6rem;pointer-events:none}
+.uploadbox__img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.uploadbox.has-photo::after{opacity:0;transition:opacity var(--t1) var(--e)}
+
+.uploadwrap{position:relative;display:inline-block}
+.uploadclear{
+  position:absolute;top:-.55rem;right:-.55rem;width:1.6rem;height:1.6rem;z-index:2;
+  display:grid;place-items:center;background:var(--paper);color:var(--steel);
+  border:var(--hairline) solid var(--hair);border-radius:50%;
+  transition:color var(--t2) var(--e),border-color var(--t2) var(--e),transform var(--t1) var(--e);
+}
+.uploadclear:hover{color:var(--ink);border-color:var(--ink)}
+.uploadclear:active{transform:scale(.9)}
+.uploadclear svg{width:.6rem;height:.6rem;overflow:visible}
+.uploadclear line{stroke:currentColor;stroke-width:1.3;stroke-linecap:square}
+
+/* — lista de obra: filas con miniatura, pie de foto y manija de arrastre — */
+.obrarows{display:flex;flex-direction:column;margin-bottom:.7rem}
+.obrarow{
+  position:relative;display:flex;align-items:center;gap:.8rem;
+  padding:.55rem 0;border-bottom:var(--hairline) solid var(--hair-2);
+}
+.obrarow.is-dragging{opacity:.4}
+.obrarow.is-over{background:var(--hair-2)}
+
+.obrarow__handle{
+  flex:0 0 auto;width:1.3rem;height:1.3rem;display:grid;place-items:center;
+  color:var(--mute);cursor:grab;transition:color var(--t2) var(--e);
+}
+.obrarow__handle:hover,.obrarow__handle:focus-visible{color:var(--steel)}
+.obrarow__handle:active{cursor:grabbing}
+.obrarow__handle svg{width:.85rem;height:auto}
+.obrarow__handle line{stroke:currentColor;stroke-width:1.2;stroke-linecap:round}
+
+.obrarow__thumb{position:relative;flex:0 0 auto;width:3.6rem;height:3.6rem;background:var(--fill);overflow:hidden}
+.obrarow__thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.obrarow__badge{
+  position:absolute;left:.15rem;bottom:.15rem;
+  font-family:var(--mono);font-size:.55rem;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--paper);background:var(--ink);padding:.02rem .24rem;
+}
+
+.obrarow__cap{
+  flex:1 1 auto;min-width:0;font:inherit;font-size:var(--fs-meta);color:var(--ink);
+  background:none;border:0;border-bottom:var(--hairline) solid var(--hair);padding:.4rem 0;
+  transition:border-bottom-color var(--t2) var(--e);
+}
+.obrarow__cap::placeholder{color:var(--mute)}
+.obrarow__cap:focus{outline:0;border-bottom-color:var(--signal)}
+
+.obrarow__x{
+  flex:0 0 auto;width:1.6rem;height:1.6rem;display:grid;place-items:center;
+  color:var(--mute);border-radius:50%;
+  transition:color var(--t2) var(--e),background-color var(--t2) var(--e);
+}
+.obrarow__x:hover{color:var(--ink);background:var(--hair-2)}
+.obrarow__x svg{width:.6rem;height:.6rem;overflow:visible}
+.obrarow__x line{stroke:currentColor;stroke-width:1.3;stroke-linecap:square}
+
+.obraadd{
+  display:block;text-align:center;padding:.85rem;cursor:pointer;
+  background:var(--fill);transition:background-color var(--t2) var(--e);
+}
+.obraadd:hover{background:var(--hair-2)}
+.obraadd span{color:var(--steel);transition:color var(--t2) var(--e)}
+.obraadd:hover span{color:var(--ink)}
+
+/* Objetivos táctiles más grandes en pantalla táctil o angosta —
+   1.3rem/1.6rem quedan por debajo de lo cómodo para un dedo. La fila
+   de obra también se compacta un poco para dejarle más aire al campo
+   de texto del pie de foto. */
+@media (max-width:767px),(pointer:coarse){
+  .obrarow__handle{width:1.7rem;height:1.7rem}
+  .obrarow__handle svg{width:1rem}
+  .obrarow__x{width:2rem;height:2rem}
+  .uploadclear{width:1.9rem;height:1.9rem;top:-.6rem;right:-.6rem}
+}
+@media (max-width:480px){
+  .obrarow{gap:.55rem}
+  .obrarow__thumb{width:2.75rem;height:2.75rem}
+}
+
+.obra__frame::after{
+  content:attr(data-spec);position:absolute;left:.7rem;bottom:.55rem;
+  font-family:var(--mono);font-size:var(--fs-code);letter-spacing:.08em;color:#B7B7B7;
+}
+.r-32{aspect-ratio:3/2}.r-11{aspect-ratio:1/1}.r-45{aspect-ratio:4/5}.r-169{aspect-ratio:16/9}
+
+.pager{display:flex;justify-content:space-between;gap:var(--gut);margin-top:3.4rem;padding-top:1.1rem;border-top:var(--hairline) solid var(--hair);font-size:var(--fs-meta)}
+@media (max-width:640px){ .pager{margin-top:var(--sp-loose)} }
+.pager a{display:inline-block;color:var(--steel);transition:transform var(--t2) var(--e),color var(--t2) var(--e)}
+.pager a:hover{color:var(--ink)}
+#f-prev:hover{transform:translateX(-.35rem)}
+#f-next:hover{transform:translateX(.35rem)}
+
+/* ============================ FORM / TEXTO ============================= */
+.prose{max-width:60ch}
+.prose h2{font-size:1.35rem;font-weight:600;letter-spacing:-.02em;margin:2.2rem 0 .6rem}
+.prose p{margin:0 0 1rem;line-height:1.62}
+.prose ol{padding-left:1.1rem;margin:0 0 1rem}
+.prose li{margin-bottom:.45rem;line-height:1.55}
+
+.form{max-width:44rem}
+.form__row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gut)}
+@media (max-width:700px){ .form__row{grid-template-columns:minmax(0,1fr)} }
+.field{margin-bottom:1.5rem}
+.field label{display:block;margin-bottom:.45rem}
+.field input,.field select,.field textarea{
+  width:100%;font:inherit;font-size:var(--fs-meta);color:var(--ink);
+  background-color:transparent;background-image:linear-gradient(var(--signal),var(--signal));
+  background-repeat:no-repeat;background-position:0 100%;background-size:0 var(--hairline);
+  border:0;border-bottom:var(--hairline) solid var(--hair);padding:.45rem 0;border-radius:0;
+  transition:background-size var(--t2) var(--e),border-bottom-color var(--t2) var(--e);
+}
+.field textarea{resize:vertical;min-height:5rem;line-height:1.55}
+.field input:hover,.field select:hover,.field textarea:hover{border-bottom-color:var(--steel)}
+.field input:focus,.field select:focus,.field textarea:focus{outline:0;background-size:100% var(--hairline)}
+.field .hint{display:block;font-size:var(--fs-code);color:var(--mute);margin-top:.4rem;line-height:1.4}
+.chips{display:flex;flex-wrap:wrap;gap:.45rem}
+.chip{font-size:var(--fs-meta);border:var(--hairline) solid var(--hair);padding:.3rem .75rem;color:var(--steel)}
+.chip[aria-pressed="true"]{border-color:var(--ink);color:var(--ink)}
+.consent{display:flex;gap:.7rem;align-items:flex-start;font-size:var(--fs-meta);color:var(--steel);line-height:1.5;max-width:52ch}
+.consent input{margin-top:.25rem;accent-color:var(--signal)}
+.form__done{border:var(--hairline) solid var(--ink);padding:1rem 1.2rem;font-size:var(--fs-meta);max-width:44rem}
+
+/* ============================ PIE / RETÍCULA =========================== */
+.footer{border-top:var(--hairline) solid var(--hair);padding:1rem 0 2.2rem}
+.footer__in{display:flex;justify-content:space-between;gap:var(--gut);flex-wrap:wrap;align-items:baseline}
+@media (max-width:480px){ #specstrip{display:none} }
+.spec{font-family:var(--mono);font-size:var(--fs-code);letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}
+.spec b{color:var(--steel);font-weight:500}
+
+.gridoverlay{position:fixed;inset:0;z-index:90;pointer-events:none;display:none}
+.gridoverlay.is-on{display:block}
+.gridoverlay__in{height:100%;display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:var(--gut)}
+.gridoverlay__in span{background:rgba(255,77,0,.075)}
+
+.skip{position:absolute;left:-9999px}
+.skip:focus{left:var(--mar);top:.5rem;z-index:99;background:var(--ink);color:var(--paper);padding:.5rem .9rem;font-size:var(--fs-meta)}
+
+[hidden]{display:none !important}
+
+/* ============================================================
+   MOVIMIENTO
+   Regla: solo transform, opacity y clip-path (compositor).
+   Nada rebota, nada escala. El filete es el que se mueve.
+   ============================================================ */
+
+@keyframes blockIn{ from{opacity:0;transform:translateY(.6rem)} to{opacity:1;transform:none} }
+
+/* Tipeo del eyebrow del índice: como el texto ya es monoespaciado
+   (IBM Plex Mono, ancho de carácter fijo), un solo clip-path que se
+   abre de izquierda a derecha con pasos discretos —calculados en JS
+   según la longitud real del texto— se ve exactamente como si cada
+   carácter apareciera uno por uno, sin envolver letra por letra en
+   spans. El punto "·" cuenta como un carácter más, no se salta. */
+@keyframes typewriter{
+  from{clip-path:inset(0 100% 0 0)}
+  to{clip-path:inset(0 0 0 0)}
+}
+#idx-eyebrow{display:inline-block}
+#idx-eyebrow.is-typing{animation-name:typewriter;animation-duration:5s;animation-timing-function:steps(34,end);animation-fill-mode:both}
+
+/* Punto del logo: ciclo de 5s, 5 destellos a negro espaciados cada
+   500ms (2/s — por debajo del umbral de 3 destellos/segundo que puede
+   afectar a personas fotosensibles), luego reposo hasta el próximo
+   ciclo. Los pares de porcentajes muy cercanos (ej. 4% / 6.9%) dan el
+   corte seco de una luz de alarma en vez de un fundido. */
+@keyframes wordmarkAlarm{
+  0%,3.9%   {background:var(--signal)}
+  4%,6.9%   {background:var(--ink)}
+  7%,13.9%  {background:var(--signal)}
+  14%,16.9% {background:var(--ink)}
+  17%,23.9% {background:var(--signal)}
+  24%,26.9% {background:var(--ink)}
+  27%,33.9% {background:var(--signal)}
+  34%,36.9% {background:var(--ink)}
+  37%,43.9% {background:var(--signal)}
+  44%,46.9% {background:var(--ink)}
+  47%,100%  {background:var(--signal)}
+}
+.wordmark__dot{animation:wordmarkAlarm 5s linear infinite}
+@keyframes rowIn{   from{opacity:0;transform:translateY(.35rem)} to{opacity:1;transform:none} }
+
+/* — entrada de vista: las columnas entran escalonadas — */
+.js .enter > *{animation:blockIn var(--t3) var(--e) both}
+.js .enter > *:nth-child(2){animation-delay:70ms}
+.js .enter > *:nth-child(3){animation-delay:140ms}
+
+/* — cabecera: se asienta al hacer scroll, sin desplazar contenido — */
+.masthead{transition:border-bottom-color var(--t2) var(--e),background-color var(--t2) var(--e)}
+.masthead.is-stuck{
+  border-bottom-color:var(--ink);
+  background:color-mix(in srgb, var(--paper) 88%, transparent);
+  backdrop-filter:saturate(1.15) blur(10px);-webkit-backdrop-filter:saturate(1.15) blur(10px);
+}
+.wordmark{transition:color var(--t2) var(--e)}
+.wordmark:hover{color:var(--steel)}
+
+/* — filas: barra de señal que crece desde arriba + lavado de fondo — */
+.reg tbody tr{transition:background-color var(--t1) var(--e)}
+.reg tbody td.c-code{position:relative}
+.reg tbody td.c-code::before{
+  content:"";position:absolute;left:-.7rem;top:0;bottom:0;width:2px;background:var(--signal);
+  transform:scaleY(0);transform-origin:50% 0;transition:transform var(--t2) var(--e);
+}
+.reg tbody tr:hover td.c-code::before,
+.reg tbody tr.is-active td.c-code::before{transform:scaleY(1)}
+@media (max-width:820px){ .reg tbody td.c-code::before{display:none} }
+
+/* La regla de arriba (.reg tbody td.c-code{position:relative}) le gana
+   en especificidad a la de la vista de bloques de celular más abajo
+   (.reg .c-code{position:absolute}), porque tiene dos selectores de
+   tipo de más. El resultado real, sin este parche: en celular .c-code
+   se queda "relative" en vez de "absolute", no sale del flujo normal,
+   y su propio desplazamiento visual (top:1rem) lo monta encima del
+   nombre de la fila siguiente — exactamente lo que se ve en captura.
+   Esta regla iguala el selector exacto y gana por venir después. */
+@media (max-width:820px){
+  .reg tbody td.c-code{position:absolute;left:0;top:1rem;width:auto}
+}
+.js .row-in{animation:rowIn var(--t2) var(--e) both;animation-delay:var(--d,0ms)}
+
+/* — tarjetas de la cuadrícula — */
+.grid-view a{transition:opacity var(--t2) var(--e)}
+.grid-view:hover a{opacity:.45}
+.grid-view a:hover{opacity:1}
+.grid-view a .card__name{
+  background-image:linear-gradient(var(--ink),var(--ink));background-repeat:no-repeat;
+  background-position:0 100%;background-size:0 var(--hairline);
+  transition:background-size var(--t2) var(--e);display:inline;
+}
+.grid-view a:hover .card__name{background-size:100% var(--hairline)}
+.js .card-in{animation:blockIn var(--t3) var(--e) both;animation-delay:var(--d,0ms)}
+
+/* — revelado de imagen: cortina que sube, la ficha técnica entra después — */
+.js .will-reveal{clip-path:inset(100% 0 0 0)}
+.js .will-reveal::after{opacity:0}
+.js .is-revealed{clip-path:inset(0 0 0 0);transition:clip-path var(--t4) var(--e) var(--d,0ms)}
+.js .is-revealed::after{opacity:1;transition:opacity var(--t2) var(--e) calc(var(--d,0ms) + 220ms)}
+
+/* — obras: el número se enciende, la ficha técnica se aclara — */
+.obra__num{transition:color var(--t2) var(--e)}
+.obra:hover .obra__num{color:var(--signal)}
+.obra__frame::after{transition:color var(--t2) var(--e)}
+.obra:hover .obra__frame::after{color:var(--steel)}
+
+/* — buscador: filete de señal que se traza al enfocar — */
+.search{position:relative}
+.search::after{
+  content:"";position:absolute;left:0;right:0;bottom:0;height:var(--hairline);background:var(--signal);
+  transform:scaleX(0);transform-origin:0 50%;transition:transform var(--t2) var(--e);
+}
+.search:focus-within::after{transform:scaleX(1)}
+.search input:focus{border-bottom-color:var(--ink)}
+
+/* — quitar filtros: aparece solo cuando hay algo que quitar — */
+.clearwrap{
+  display:grid;grid-template-rows:0fr;margin-top:0;opacity:0;pointer-events:none;
+  transition:grid-template-rows var(--t3) var(--e),margin-top var(--t3) var(--e),opacity var(--t2) var(--e);
+}
+.clearwrap > div{overflow:hidden;min-height:0}
+.clearwrap[data-on="true"]{grid-template-rows:1fr;margin-top:1.5rem;opacity:1;pointer-events:auto}
+#clear{
+  display:inline-flex;align-items:center;gap:.5rem;width:auto;color:var(--steel);
+  transition:color var(--t2) var(--e);
+}
+#clear:hover{color:var(--ink)}
+#clear .x{
+  width:.72rem;height:.72rem;flex:0 0 auto;overflow:visible;
+  transition:transform var(--t3) var(--e);
+}
+#clear .x line{
+  stroke:var(--signal);stroke-width:1.4;stroke-linecap:square;
+  stroke-dasharray:13;stroke-dashoffset:13;
+  transition:stroke-dashoffset 280ms var(--e);
+}
+.clearwrap[data-on="true"] #clear .x line{stroke-dashoffset:0}
+.clearwrap[data-on="true"] #clear .x line:nth-child(2){transition-delay:100ms}
+#clear:hover .x{transform:rotate(90deg)}
+
+/* — estado vacío — */
+#empty{animation:blockIn var(--t3) var(--e) both}
+
+/* — previsualización: fundido corto al cambiar de fila — */
+#pv-body{transition:opacity var(--t1) var(--e-io)}
+#pv-body.is-out{opacity:0}
+
+/* — conmutador de vista y chips — */
+.viewtoggle button{transition:color var(--t2) var(--e)}
+.chip{transition:color var(--t2) var(--e),border-color var(--t2) var(--e),transform var(--t1) var(--e)}
+.chip:active{transform:translateY(1px)}
+.datos a{transition:border-bottom-color var(--t2) var(--e)}
+#done{animation:blockIn var(--t3) var(--e) both}
+
+/* — retícula: las columnas bajan escalonadas — */
+.gridoverlay__in span{transform:scaleY(0);transform-origin:50% 0;transition:transform 260ms var(--e) var(--d,0ms)}
+.gridoverlay.is-on .gridoverlay__in span{transform:scaleY(1)}
+
+/* — sin movimiento: todo llega a su estado final, nada queda oculto — */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition-duration:1ms !important;animation-duration:1ms !important;animation-delay:0ms !important}
+  .js .will-reveal,.js .is-revealed{clip-path:none !important}
+  .js .will-reveal::after{opacity:1 !important}
+  .grid-view:hover a{opacity:1}
+  /* La regla de arriba solo acorta la duración a 1ms — en una animación
+     infinita eso seguiría parpadeando sin parar. El punto del logo se
+     apaga del todo y se queda en su color de reposo. */
+  .wordmark__dot{animation:none !important;background:var(--signal) !important}
+}
+</style>
+</head>
+<body>
+
+<a class="skip" href="#main">Saltar al contenido</a>
+
+<header class="masthead">
+  <div class="shell masthead__in">
+    <a href="#" class="wordmark" data-go="indice">colectivo<span class="wordmark__dot">.</span><b>emergencia</b></a>
+    <nav class="mainnav" aria-label="Principal">
+      <button data-go="indice" aria-current="page">Índice</button>
+      <button data-go="quienes">¿Quiénes somos?</button>
+      <button data-go="inscribete" class="navcta">Inscríbete</button>
+    </nav>
+    <button type="button" class="hamburger" id="menu-open" aria-label="Abrir menú" aria-haspopup="dialog" aria-controls="mobilemenu" aria-expanded="false">
+      <svg viewBox="0 0 20 14" aria-hidden="true" focusable="false">
+        <line x1="0" y1="1" x2="20" y2="1"/>
+        <line x1="0" y1="7" x2="20" y2="7"/>
+        <line x1="0" y1="13" x2="20" y2="13"/>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- ====================== VISTA: ÍNDICE ====================== -->
+<section id="v-indice">
+  <div class="shell frame-grid frame-grid--triple">
+
+    <aside class="rail" aria-label="Filtros">
+      <p class="rail__title">Sector cultural de Pereira, Manizales, Cali</p>
+
+      <div class="filterbar" id="filterbar">
+      <div class="filtertrigs">
+        <span class="filtertrig-wrap" data-group="city">
+          <button type="button" class="filtertrig" aria-haspopup="dialog" aria-controls="filtersheet" aria-expanded="false">Ciudad<b class="filtertrig__count"></b></button>
+          <button type="button" class="filtertrig__x" aria-label="Quitar filtro de ciudad">
+            <svg viewBox="0 0 12 12" aria-hidden="true" focusable="false"><line x1="1.5" y1="1.5" x2="10.5" y2="10.5"/><line x1="10.5" y1="1.5" x2="1.5" y2="10.5"/></svg>
+          </button>
+        </span>
+        <span class="filtertrig-wrap" data-group="state">
+          <button type="button" class="filtertrig" aria-haspopup="dialog" aria-controls="filtersheet" aria-expanded="false">Estado<b class="filtertrig__count"></b></button>
+          <button type="button" class="filtertrig__x" aria-label="Quitar filtro de estado">
+            <svg viewBox="0 0 12 12" aria-hidden="true" focusable="false"><line x1="1.5" y1="1.5" x2="10.5" y2="10.5"/><line x1="10.5" y1="1.5" x2="1.5" y2="10.5"/></svg>
+          </button>
+        </span>
+        <span class="filtertrig-wrap" data-group="pract">
+          <button type="button" class="filtertrig" aria-haspopup="dialog" aria-controls="filtersheet" aria-expanded="false">Práctica<b class="filtertrig__count"></b></button>
+          <button type="button" class="filtertrig__x" aria-label="Quitar filtro de práctica">
+            <svg viewBox="0 0 12 12" aria-hidden="true" focusable="false"><line x1="1.5" y1="1.5" x2="10.5" y2="10.5"/><line x1="10.5" y1="1.5" x2="1.5" y2="10.5"/></svg>
+          </button>
+        </span>
+      </div>
+      <div class="rail__group">
+        <span class="rail__label code">Ciudad</span>
+        <ul class="rail__list rail__list--h" data-group="city">
+          <li><button class="filter" aria-pressed="false" data-v="Pereira">Pereira</button></li>
+          <li><button class="filter" aria-pressed="false" data-v="Manizales">Manizales</button></li>
+          <li><button class="filter" aria-pressed="false" data-v="Cali">Cali</button></li>
+        </ul>
+      </div>
+
+      <div class="rail__group">
+        <span class="rail__label code">Estado</span>
+        <ul class="rail__list rail__list--h" data-group="state">
+          <li><button class="filter" aria-pressed="false" data-v="disponible">Disponible ya</button></li>
+          <li><button class="filter" aria-pressed="false" data-v="proyecto">Por proyecto</button></li>
+          <li><button class="filter" aria-pressed="false" data-v="obra">Vende obra</button></li>
+          <li><button class="filter" aria-pressed="false" data-v="empleo">Busca empleo</button></li>
+        </ul>
+      </div>
+
+      <div class="rail__group">
+        <span class="rail__label code">Práctica</span>
+        <ul class="rail__list rail__list--h" data-group="pract">
+          <li><button class="filter" aria-pressed="false" data-v="Gráfica">Gráfica</button></li>
+          <li><button class="filter" aria-pressed="false" data-v="Ilustración">Ilustración</button></li>
+          <li><button class="filter" aria-pressed="false" data-v="Fotografía">Fotografía</button></li>
+          <li><button class="filter" aria-pressed="false" data-v="Editorial">Editorial</button></li>
+          <li><button class="filter" aria-pressed="false" data-v="Pedagogía">Pedagogía</button></li>
+          <li><button class="filter" aria-pressed="false" data-v="Oficio">Oficio</button></li>
+        </ul>
+      </div>
+
+      <div class="clearwrap" id="clearwrap" data-on="false">
+        <div>
+          <button class="filter" id="clear">
+            <svg class="x" viewBox="0 0 12 12" aria-hidden="true" focusable="false">
+              <line x1="1.5" y1="1.5" x2="10.5" y2="10.5"/>
+              <line x1="10.5" y1="1.5" x2="1.5" y2="10.5"/>
+            </svg>
+            <span>Quitar filtros</span>
+          </button>
+        </div>
+      </div>
+      </div>
+    </aside>
+
+    <div>
+      <div class="idx__head">
+        <span class="code" id="idx-eyebrow">Registro abierto · act. 18.08.2026</span>
+        <h1 class="idx__h1">Quién está trabajando ahora</h1>
+        <p class="lead dim">Directorio de artistas, diseñadores, docentes y gestores culturales del suroccidente colombiano tras el sismo del 10 de agosto. Contrata, encarga trabajo o compra obra directamente a cada persona.</p>
+
+        <div class="idx__tools">
+          <div class="search">
+            <label class="code" for="q" style="display:block;margin-bottom:.3rem">Buscar</label>
+            <input id="q" type="search" placeholder="Nombre, usuario o práctica" autocomplete="off">
+          </div>
+          <div class="viewtoggle" role="group" aria-label="Forma de ver el índice">
+            <button data-mode="tabla" aria-pressed="true">Tabla</button>
+            <button data-mode="cuadricula" aria-pressed="false">Cuadrícula</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="reg-wrap">
+        <table class="reg">
+          <thead>
+            <tr>
+              <th class="c-code" scope="col">Código</th>
+              <th class="c-name" scope="col">Nombre</th>
+              <th class="c-city" scope="col">Ciudad</th>
+              <th class="c-pract" scope="col">Práctica</th>
+              <th class="c-state" scope="col">Estado</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <p id="empty" class="dim" hidden style="padding:1.6rem 0;font-size:var(--fs-meta)">Ningún registro coincide. Quita un filtro o busca por nombre.</p>
+      </div>
+
+      <div class="grid-view" id="cards"></div>
+    </div>
+
+    <aside class="preview" aria-live="polite" aria-label="Vista previa">
+      <span class="code" style="display:block;margin-bottom:.7rem">Vista previa</span>
+      <div id="pv-body">
+        <p class="preview__empty">Pasa el cursor por un registro para ver una obra y los datos de contacto.</p>
+      </div>
+    </aside>
+
+  </div>
+</section>
+
+<!-- ====================== VISTA: FICHA ====================== -->
+<section id="v-ficha" hidden>
+  <div class="shell frame-grid">
+
+    <aside class="rail" aria-label="Otros registros">
+      <p class="rail__title">Sector cultural de Pereira, Manizales, Cali</p>
+      <span class="rail__label code">Registro</span>
+      <ul class="rail__list rail__list--people" id="rail-people"></ul>
+
+      <span class="peopletrig-wrap" id="people-trigwrap">
+        <button type="button" class="peopletrig" id="people-trigger" aria-haspopup="dialog" aria-controls="peoplesheet" aria-expanded="false">
+          Otros registros<b class="filtertrig__count" id="people-count"></b>
+        </button>
+      </span>
+
+      <p style="margin-top:1.4rem"><button class="filter backlink" data-go="indice"><span class="backlink__arrow">←</span> Volver al índice</button></p>
+    </aside>
+
+    <div>
+      <span class="code" id="f-code">—</span>
+      <h1 class="ficha__h1" id="f-name">—</h1>
+
+      <div class="ficha__cols">
+        <dl class="datos" id="f-datos"></dl>
+        <div>
+          <p class="bio" id="f-bio">—</p>
+
+          <div class="statement">
+            <span class="code">Acerca de mi trabajo</span>
+            <p class="bio" id="f-about">—</p>
+          </div>
+
+          <div class="statement">
+            <span class="code">Trayectoria</span>
+            <p class="bio" id="f-trayectoria">—</p>
+          </div>
+
+          <div class="cta">
+            <a class="btn" href="#" id="f-cta1">Escribir para contratar</a>
+            <a class="btn btn--ghost" href="#" id="f-cta2">Ver portafolio completo</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="obras">
+        <figure class="obra obra--full" style="margin:0">
+          <figcaption class="obra__cap"><span class="obra__num">01</span><span><b>Serie sin título</b> — impresión digital, 2025. Pieza principal del registro.</span></figcaption>
+          <div class="obra__frame r-32" data-spec="3:2 · 2400×1600"></div>
+        </figure>
+
+        <figure class="obra obra--half" style="margin:0">
+          <figcaption class="obra__cap"><span class="obra__num">02</span><span><b>Identidad</b> — encargo, 2024.</span></figcaption>
+          <div class="obra__frame r-45" data-spec="4:5 · 1600×2000"></div>
+        </figure>
+
+        <figure class="obra obra--half" style="margin:0">
+          <figcaption class="obra__cap"><span class="obra__num">03</span><span><b>Cartelería</b> — riso a dos tintas, 2024.</span></figcaption>
+          <div class="obra__frame r-45" data-spec="4:5 · 1600×2000"></div>
+        </figure>
+
+        <figure class="obra obra--third" style="margin:0">
+          <figcaption class="obra__cap"><span class="obra__num">04</span><span><b>Estudio</b> — 2023.</span></figcaption>
+          <div class="obra__frame r-11" data-spec="1:1 · 1400×1400"></div>
+        </figure>
+        <figure class="obra obra--third" style="margin:0">
+          <figcaption class="obra__cap"><span class="obra__num">05</span><span><b>Estudio</b> — 2023.</span></figcaption>
+          <div class="obra__frame r-11" data-spec="1:1 · 1400×1400"></div>
+        </figure>
+        <figure class="obra obra--third" style="margin:0">
+          <figcaption class="obra__cap"><span class="obra__num">06</span><span><b>Estudio</b> — 2023.</span></figcaption>
+          <div class="obra__frame r-11" data-spec="1:1 · 1400×1400"></div>
+        </figure>
+      </div>
+
+      <nav class="pager" aria-label="Navegación entre registros">
+        <a href="#" id="f-prev">← <span></span></a>
+        <a href="#" id="f-next"><span></span> →</a>
+      </nav>
+    </div>
+  </div>
+</section>
+
+<!-- ====================== VISTA: QUIÉNES SOMOS ====================== -->
+<section id="v-quienes" hidden>
+  <div class="shell frame-grid">
+    <aside class="rail"><p class="rail__title">Sector cultural de Pereira, Manizales, Cali</p></aside>
+    <div class="prose">
+      <span class="code">Nota de la organización</span>
+      <h1 class="idx__h1">Un registro, no una campaña</h1>
+      <p class="lead">El sismo del 10 de agosto de 2026 dañó talleres, salas, teatros y museos del Eje Cafetero y el Valle. Muchas personas del sector perdieron el espacio donde trabajaban y los encargos que tenían firmados.</p>
+      <p>Este sitio no recoge donaciones. Hace una sola cosa: reunir en un índice público a quienes siguen produciendo, con su práctica, su ciudad, su obra y una forma directa de contactarlos. La transacción ocurre entre las dos personas, sin intermediario.</p>
+      <h2>Cómo funciona</h2>
+      <ol>
+        <li>Te registras con tu nombre o el de tu estudio, tu ciudad y hasta seis piezas.</li>
+        <li>Marcas tu estado: disponible ya, por proyecto, vendes obra o buscas empleo.</li>
+        <li>Quien te contacte lo hace a tu correo o a tu perfil. Nada pasa por nosotros.</li>
+        <li>Puedes actualizar tu estado o pedir que borremos tu ficha cuando quieras.</li>
+      </ol>
+      <h2>Quién puede registrarse</h2>
+      <p>Cualquier persona o colectivo del sector cultural con base en Pereira, Manizales, Cali y municipios del Eje Cafetero: diseño, arte, ilustración, fotografía, editorial, artes escénicas, música, oficios, pedagogía artística, gestión y agencias culturales.</p>
+      <p class="dim" style="font-size:var(--fs-meta)">Los derechos de cada obra siguen siendo de su autor. Publicamos solo los datos que cada persona autoriza.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ====================== VISTA: INSCRÍBETE ====================== -->
+<section id="v-inscribete" hidden>
+  <div class="shell frame-grid">
+    <aside class="rail">
+      <p class="rail__title">Sector cultural de Pereira, Manizales, Cali</p>
+    </aside>
+    <div>
+      <span class="code">Formulario de registro</span>
+      <h1 class="idx__h1" id="ins-h1">Inscríbete en el índice</h1>
+      <p class="lead dim" id="ins-lead" style="margin-bottom:2.4rem">Toma unos cinco minutos. Revisamos tu ficha en menos de 2 horas y te escribimos al correo con la decisión.</p>
+      <p class="hint" id="edit-note" hidden style="margin:-1.4rem 0 2.4rem;max-width:46ch"></p>
+
+      <div class="cta" id="gate" style="margin-top:0">
+        <button type="button" class="btn" id="gate-signup">No tengo cuenta — inscribirme</button>
+        <button type="button" class="btn btn--ghost" id="gate-login">Ya tengo cuenta — iniciar sesión</button>
+      </div>
+
+      <div id="loginstep" hidden style="max-width:26rem">
+        <div class="field">
+          <label class="code" for="li-mail">Correo con el que te registraste</label>
+          <input id="li-mail" type="email">
+          <span class="hint">Te enviaríamos un enlace de acceso a ese correo. En esta maqueta, entra directo con el botón — no hay backend todavía.</span>
+        </div>
+        <div class="cta">
+          <button type="button" class="btn" id="login-go">Entrar y editar mi ficha</button>
+          <button type="button" class="filter backlink" id="login-back"><span class="backlink__arrow">←</span> Volver</button>
+        </div>
+      </div>
+
+      <form class="form" id="form" novalidate hidden>
+        <div class="form__row">
+          <div class="field">
+            <label class="code" for="i-nombre">Nombre o estudio</label>
+            <input id="i-nombre" name="nombre" type="text" required>
+          </div>
+          <div class="field">
+            <label class="code" for="i-user">Usuario público</label>
+            <input id="i-user" name="user" type="text" placeholder="@tuusuario">
+            <span class="hint">Así apareces en el índice.</span>
+          </div>
+        </div>
+
+        <div class="form__row">
+          <div class="field">
+            <label class="code" for="i-ciudad">Ciudad</label>
+            <select id="i-ciudad" name="ciudad">
+              <option>Pereira</option><option>Manizales</option><option>Cali</option>
+              <option>Armenia</option><option>Otro municipio del Eje</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="code" for="i-estado">Estado laboral</label>
+            <select id="i-estado" name="estado">
+              <option value="disponible">Disponible ya</option>
+              <option value="proyecto">Por proyecto</option>
+              <option value="obra">Vendo obra</option>
+              <option value="empleo">Busco empleo</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="code" style="display:block;margin-bottom:.6rem">Prácticas — elige hasta tres</span>
+          <div class="chips">
+            <button type="button" class="chip" aria-pressed="false">Gráfica</button>
+            <button type="button" class="chip" aria-pressed="false">Ilustración</button>
+            <button type="button" class="chip" aria-pressed="false">Fotografía</button>
+            <button type="button" class="chip" aria-pressed="false">Editorial</button>
+            <button type="button" class="chip" aria-pressed="false">Escénicas</button>
+            <button type="button" class="chip" aria-pressed="false">Música y sonido</button>
+            <button type="button" class="chip" aria-pressed="false">Oficio</button>
+            <button type="button" class="chip" aria-pressed="false">Pedagogía</button>
+            <button type="button" class="chip" aria-pressed="false">Gestión</button>
+          </div>
+        </div>
+
+        <div class="form__row">
+          <div class="field">
+            <label class="code" for="i-mail">Correo de contacto</label>
+            <input id="i-mail" name="mail" type="email" required>
+            <span class="hint">Se publica. Es la vía por la que te contratan.</span>
+          </div>
+          <div class="field">
+            <label class="code" for="i-web">Portafolio o perfil</label>
+            <input id="i-web" name="web" type="url" placeholder="https://">
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="code" for="i-bio">Qué haces</label>
+          <textarea id="i-bio" name="bio" maxlength="280"></textarea>
+          <span class="hint">Hasta 280 caracteres. En primera persona, sin adjetivos de más.</span>
+        </div>
+
+        <div class="field">
+          <label class="code" for="i-about">Acerca de tu trabajo</label>
+          <textarea id="i-about" name="about" maxlength="500"></textarea>
+          <span class="hint">Un párrafo más largo: tu proceso, los temas que trabajas, qué te distingue. Hasta 500 caracteres.</span>
+        </div>
+
+        <div class="field">
+          <label class="code" for="i-trayectoria">Trayectoria</label>
+          <textarea id="i-trayectoria" name="trayectoria" maxlength="500"></textarea>
+          <span class="hint">Formación, tiempo trabajando en esto, proyectos o clientes relevantes. Hasta 500 caracteres.</span>
+        </div>
+
+        <div class="field">
+          <span class="code" style="display:block;margin-bottom:.6rem">Foto de perfil</span>
+          <div class="uploadwrap" style="width:9rem;max-width:100%">
+            <label class="obra__frame r-11 uploadbox" id="photobox" data-spec="JPG o PNG · cuadrada">
+              <input type="file" id="i-foto" class="file-input" accept="image/*">
+              <span class="uploadbox__ph dim" style="font-size:var(--fs-meta)">Seleccionar archivo</span>
+              <img class="uploadbox__img" id="photo-preview" alt="" hidden>
+            </label>
+            <button type="button" class="uploadclear" id="photo-clear" hidden aria-label="Quitar foto de perfil">
+              <svg viewBox="0 0 12 12" aria-hidden="true" focusable="false"><line x1="1.5" y1="1.5" x2="10.5" y2="10.5"/><line x1="10.5" y1="1.5" x2="1.5" y2="10.5"/></svg>
+            </button>
+          </div>
+          <span class="hint">Recórtala cuadrada antes de subirla. Es la foto que aparece en la vista de cuadrícula del índice y en la miniatura de la tabla en pantallas pequeñas.</span>
+        </div>
+
+        <div class="field">
+          <span class="code" style="display:block;margin-bottom:.8rem">Así se ve en el índice — ejemplo</span>
+          <div class="formsample">
+            <div class="card__frame" id="fp-frame"></div>
+            <div>
+              <div class="card__name" id="fp-name">Tu nombre</div>
+              <div class="card__meta" id="fp-meta">Ciudad — práctica</div>
+              <div class="card__state" style="margin-top:.4rem"><span class="state" data-s="disponible" id="fp-state">Disponible</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="code" style="display:block;margin-bottom:.6rem">Obra — hasta 6 imágenes <span style="color:var(--mute)" id="obra-count">(0/6)</span></span>
+          <div class="obrarows" id="obratiles"></div>
+          <span class="hint">Arrastra el ícono de la izquierda para reordenarlas — ese orden es el que aparece en tu portafolio. El texto junto a cada imagen es su pie de foto en la ficha.</span>
+        </div>
+
+        <div class="field">
+          <label class="consent">
+            <input type="checkbox" required>
+            <span>Autorizo publicar estos datos en el índice y confirmo que la obra es mía. Puedo pedir que se borre mi ficha en cualquier momento escribiendo al colectivo.</span>
+          </label>
+        </div>
+
+        <button class="btn" type="submit" id="form-submit">Enviar registro</button>
+        <button type="button" class="filter backlink" id="form-back" style="margin-top:1.1rem"><span class="backlink__arrow">←</span> Volver</button>
+      </form>
+
+      <div class="form__done" id="done" hidden>
+        <b id="done-title">Solicitud enviada.</b> <span id="done-body">La revisamos en menos de 2 horas y te escribimos al correo con la decisión.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <div class="shell footer__in">
+    <span class="spec">colectivo.emergencia · maqueta v0.1 · datos de demostración</span>
+    <span class="spec" id="specstrip">—</span>
+    <button class="spec" id="gridbtn" aria-pressed="false" style="color:var(--steel)">Retícula [G]</button>
+  </div>
+</footer>
+
+<div class="mobilemenu" id="mobilemenu" aria-hidden="true">
+  <div class="mobilemenu__head">
+    <span class="wordmark">colectivo<span class="wordmark__dot">.</span><b>emergencia</b></span>
+    <button type="button" class="uploadclear" id="menu-close" aria-label="Cerrar menú" style="position:static">
+      <svg viewBox="0 0 12 12" aria-hidden="true" focusable="false"><line x1="1.5" y1="1.5" x2="10.5" y2="10.5"/><line x1="10.5" y1="1.5" x2="1.5" y2="10.5"/></svg>
+    </button>
+  </div>
+  <nav class="mobilemenu__nav" aria-label="Principal">
+    <button type="button" data-go="indice" class="mobilemenu__link">Índice</button>
+    <button type="button" data-go="quienes" class="mobilemenu__link">¿Quiénes somos?</button>
+  </nav>
+  <div class="mobilemenu__bottom">
+    <button type="button" data-go="inscribete" class="navcta navcta--block">Inscríbete</button>
+    <div class="mobilemenu__social">
+      <a href="https://instagram.com/colectivo.emergencia" class="filter" style="width:auto">Instagram</a>
+      <a href="mailto:hola@colectivoemergencia.co" class="filter" style="width:auto">Correo</a>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="filtersheet" aria-hidden="true">
+  <button type="button" class="sheet__scrim" tabindex="-1" aria-hidden="true"></button>
+  <div class="sheet__panel" role="dialog" aria-modal="true" aria-label="Filtros">
+    <div class="sheet__head">
+      <span class="code">Filtros</span>
+      <button type="button" class="uploadclear" id="sheet-close" aria-label="Cerrar filtros" style="position:static">
+        <svg viewBox="0 0 12 12" aria-hidden="true" focusable="false"><line x1="1.5" y1="1.5" x2="10.5" y2="10.5"/><line x1="10.5" y1="1.5" x2="1.5" y2="10.5"/></svg>
+      </button>
+    </div>
+    <div class="sheet__body">
+      <div class="sheet__group">
+        <span class="rail__label code">Ciudad</span>
+        <label class="sheet__opt"><input type="checkbox" class="sheetcheck" data-group="city" data-v="Pereira"><span>Pereira</span></label>
+        <label class="sheet__opt"><input type="checkbox" class="sheetcheck" data-group="city" data-v="Manizales"><span>Manizales</span></label>
+        <label class="sheet__opt"><input type="checkbox" class="sheetcheck" data-group="city" data-v="Cali"><span>Cali</span></label>
+      </div>
+      <div class="sheet__group">
+        <span class="rail__label code">Estado</span>
+        <label class="sheet__opt"><input type="checkbox" class="sheetcheck" data-group="state" data-v="disponible"><span>Disponible ya</span></label>
+        <label class="sheet__opt"><input type="checkbox" class="sheetcheck" data-group="state" data-v="proyecto"><span>Por proyecto</span></label>
+        <label class="sheet__opt"><input type="checkbox" class="sheetcheck" data-group="state" data-v="obra"><span>Vende obra</span></label>
+        <label class="sheet__opt"><input type="checkbox" class="sheetcheck" data-group="state" data-v="empleo"><span>Busca empleo</span></label>
+      </div>
+      <div class="sheet__group">
+        <span class="rail__label code">Práctica</span>
+        <label class="sheet__opt"><input type="checkbox" class="sheetcheck" data-group="pract" data-v="Gráfica"><span>Gráfica</span></label>
+        <label class="sheet__opt"><input type="checkbox" class="sheetcheck" data-group="pract" data-v="Ilustración"><span>Ilustración</span></label>
+        <label class="sheet__opt"><input type="checkbox" class="sheetcheck" data-group="pract" data-v="Fotografía"><span>Fotografía</span></label>
+        <label class="sheet__opt"><input type="checkbox" class="sheetcheck" data-group="pract" data-v="Editorial"><span>Editorial</span></label>
+        <label class="sheet__opt"><input type="checkbox" class="sheetcheck" data-group="pract" data-v="Pedagogía"><span>Pedagogía</span></label>
+        <label class="sheet__opt"><input type="checkbox" class="sheetcheck" data-group="pract" data-v="Oficio"><span>Oficio</span></label>
+      </div>
+    </div>
+    <div class="sheet__foot">
+      <button type="button" class="filter" id="sheet-clear" style="color:var(--steel)">Quitar filtros</button>
+      <button type="button" class="btn" id="sheet-apply">Ver resultados</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="peoplesheet" aria-hidden="true">
+  <button type="button" class="sheet__scrim" tabindex="-1" aria-hidden="true"></button>
+  <div class="sheet__panel" role="dialog" aria-modal="true" aria-label="Otros registros">
+    <div class="sheet__head">
+      <span class="code">Otros registros</span>
+      <button type="button" class="uploadclear" id="peoplesheet-close" aria-label="Cerrar" style="position:static">
+        <svg viewBox="0 0 12 12" aria-hidden="true" focusable="false"><line x1="1.5" y1="1.5" x2="10.5" y2="10.5"/><line x1="10.5" y1="1.5" x2="1.5" y2="10.5"/></svg>
+      </button>
+    </div>
+    <div class="sheet__body" id="peoplesheet-body"></div>
+  </div>
+</div>
+
+<div class="gridoverlay" id="overlay" aria-hidden="true"><div class="shell" style="height:100%"><div class="gridoverlay__in" id="overlay-in"></div></div></div>
+
+<script>
+/* ---------------------------------------------------------------
+   Datos de demostración. En producción esto viene de un JSON/CMS.
+   Ahora mismo cada .card__frame / .thumb-inline / .preview__frame es
+   una caja gris sin imagen real. Cuando haya fotos de verdad:
+     - .card__frame (cuadrícula) y .thumb-inline (tabla en móvil)  → foto de perfil
+     - .preview__frame (panel de previsualización, ≥1600px)       → primera imagen de obra
+   No confundir las dos fuentes: son campos distintos del formulario.
+   --------------------------------------------------------------- */
+const DATA = [
+  {c:'PER·001', n:'Julián Salazar',      u:'@juliansalazar',    city:'Pereira',   p:['Gráfica','Editorial'],        pl:'UI · Dirección de arte · Gráfica', s:'disponible', mail:'hola@ejemplo.co', web:'instagram.com/juliansalazar',
+    bio:'Diseño identidad y sistemas visuales para proyectos culturales. Trabajé ocho años en estudio y desde 2024 por cuenta propia. Mi taller en el centro de Pereira quedó inhabilitado; sigo produciendo en remoto y tomo encargos de identidad, editorial y web.',
+    about:'Parto siempre de la tipografía: para mí un sistema visual es primero un sistema de lectura. Trabajo con retículas estrictas y poca decoración, y prefiero que la marca aguante bien en blanco y negro antes de pensar en color. Me interesan especialmente proyectos culturales y educativos, donde el diseño tiene que sostener mucho contenido sin volverse ruidoso.',
+    trayectoria:'Estudié diseño gráfico en la Universidad Tecnológica de Pereira. Trabajé ocho años en Estudio Blanco, donde llevé identidad de dos festivales de cine y la señalética del Museo de Arte de Pereira. Desde 2024 trabajo de forma independiente.'},
+  {c:'PER·002', n:'Estudio Koru',        u:'@koru.studio.co',   city:'Pereira',   p:['Gráfica'],                    pl:'Identidad · Web',                  s:'disponible', mail:'hola@ejemplo.co', web:'koru.studio.co',
+    bio:'Estudio de dos personas. Identidad, sitios web y sistemas de marca para instituciones culturales y pequeñas empresas del Eje.',
+    about:'Nos gusta el trabajo largo: acompañar una marca desde el naming hasta el sitio y la papelería, en vez de entregar solo un logo suelto. Cada proyecto sale con un manual corto y usable, no un PDF de cien páginas que nadie vuelve a abrir.',
+    trayectoria:'Fundamos Koru en 2021 después de trabajar cada uno por su lado en agencias de Medellín. Hemos hecho identidad para dos bibliotecas públicas, una editorial independiente y varios comercios del centro de Pereira.'},
+  {c:'MZL·003', n:'Fagua',               u:'@fagua',            city:'Manizales', p:['Ilustración'],                pl:'Ilustración · Muralismo',          s:'obra',       mail:'hola@ejemplo.co', web:'instagram.com/fagua',
+    bio:'Ilustración y mural. Vendo originales en papel y acepto encargos de retrato y portada.',
+    about:'Trabajo con formas grandes y color plano, casi sin degradados — pienso cada pieza como si tuviera que leerse desde la otra cuadra. En papel uso tinta y acrílico; en muro, esmalte. Me interesan las figuras cotidianas del Eje Cafetero: el arriero, el vendedor ambulante, el bus intermunicipal.',
+    trayectoria:'Empecé pintando muros sin permiso en Manizales hace diez años. Hoy tengo cerca de quince murales legales en la ciudad, entre ellos uno en la fachada de un colegio público, y expuse obra en papel en dos galerías independientes de la región.'},
+  {c:'CAL·004', n:'Volátil',             u:'@volatil',          city:'Cali',      p:['Editorial'],                  pl:'Editorial · Riso',                 s:'disponible', mail:'hola@ejemplo.co', web:'volatil.co',
+    bio:'Taller de impresión riso y edición independiente. Imprimimos fanzines, catálogos y cartelería en tirajes cortos.',
+    about:'La riso nos gusta justamente por sus límites: pocos colores, capas que no calzan perfecto, texturas que una impresora digital no da. Trabajamos tirajes de 30 a 300 copias, siempre con papel reciclado o de fibra local cuando se consigue.',
+    trayectoria:'Montamos el taller en 2019 con una sola máquina de segunda mano traída de Bogotá. Desde entonces hemos impreso más de sesenta títulos entre fanzines, catálogos de artista y ediciones de poesía para editoriales pequeñas del suroccidente.'},
+  {c:'CAL·005', n:'Jess Ocampo',         u:'@jess',             city:'Cali',      p:['Fotografía'],                 pl:'Fotografía documental',            s:'proyecto',   mail:'hola@ejemplo.co', web:'instagram.com/jess',
+    bio:'Fotografía documental y de archivo. Disponible para coberturas, retrato y registro de obra.',
+    about:'Trabajo en blanco y negro casi siempre, con luz disponible, sin montar la escena. Me interesa más lo que la gente hace cuando deja de posar que el momento del clic. También hago registro técnico de obra para artistas: piezas, exposiciones, procesos de taller.',
+    trayectoria:'Estudié fotografía documental en la Universidad del Valle. He cubierto tres festivales culturales de Cali de forma independiente y llevo el archivo fotográfico de un colectivo de danza desde 2022.'},
+  {c:'MZL·006', n:'Creative Morning Eje',u:'@creativemorning',  city:'Manizales', p:['Gestión','Pedagogía'],        pl:'Gestión cultural · Pedagogía',     s:'empleo',     mail:'hola@ejemplo.co', web:'instagram.com/creativemorning',
+    bio:'Programación de encuentros y talleres para comunidades creativas del Eje Cafetero.',
+    about:'Organizamos charlas, talleres cortos y encuentros de networking para gente que trabaja en creativo — diseño, arquitectura, ilustración, cine. La idea es simple: que el Eje no dependa de Bogotá o Medellín para tener una escena que se conozca entre sí.',
+    trayectoria:'El capítulo lleva funcionando cuatro años con encuentros mensuales. Buscamos vincularnos con una institución o programa que nos dé sede fija y continuidad, algo que perdimos con el cierre temporal de nuestro espacio habitual tras el sismo.'},
+  {c:'MZL·007', n:'Mariana Betancur',    u:'@m.betancur',       city:'Manizales', p:['Oficio'],                     pl:'Cerámica',                          s:'obra',       mail:'hola@ejemplo.co', web:'instagram.com/m.betancur',
+    bio:'Cerámica utilitaria y pieza única, torno y alta temperatura. El horno sobrevivió; el taller no.',
+    about:'Trabajo casi todo en gres, con esmaltes propios que mezclo yo misma — busco superficies mates, terrosas, nada brillante. Hago vajilla utilitaria por encargo y piezas únicas más escultóricas cuando el tiempo me alcanza entre pedidos.',
+    trayectoria:'Aprendí el oficio con mi maestra durante seis años antes de montar taller propio en 2017. He vendido en dos ferias de diseño nacionales y tengo piezas en tres tiendas de objeto en Bogotá y Medellín.'},
+  {c:'PER·008', n:'Taller Guadua',       u:'@taller.guadua',    city:'Pereira',   p:['Oficio'],                     pl:'Diseño de objeto',                  s:'disponible', mail:'hola@ejemplo.co', web:'tallerguadua.co',
+    bio:'Mobiliario y objeto en guadua y maderas locales. Producción por encargo y series cortas.',
+    about:'Trabajamos la guadua tratada con métodos tradicionales de curado, combinada con maderas certificadas de la región. Diseñamos mobiliario que se pueda desarmar y transportar fácil — pensando siempre en el envío, no solo en la pieza terminada.',
+    trayectoria:'El taller lo fundó mi padre hace veinte años; yo lo dirijo desde 2019 con un pequeño equipo de tres personas. Hemos amoblado dos hoteles boutique de la región y varios espacios comerciales en Pereira.'},
+  {c:'CAL·009', n:'Andrés Quiceno',      u:'@quicenodibuja',    city:'Cali',      p:['Ilustración','Editorial'],    pl:'Dibujo · Cómic',                    s:'obra',       mail:'hola@ejemplo.co', web:'instagram.com/quicenodibuja',
+    bio:'Dibujo, cómic y narrativa gráfica. Vendo originales y láminas firmadas.',
+    about:'Dibujo a lápiz y tinta, casi todo a mano, y coloreo digital solo cuando la historia lo pide. Mis cómics suelen ser autobiográficos o de observación urbana — Cali vista desde el bus, desde la fila del banco, desde la casa de mi abuela.',
+    trayectoria:'Autopubliqué mi primer fanzine en 2018 y llevo seis títulos desde entonces. Participé en la Feria del Libro de Cali dos años seguidos y colaboro ocasionalmente con revistas independientes de la región.'},
+  {c:'CAL·010', n:'Revista Cauce',       u:'@revistacauce',     city:'Cali',      p:['Editorial'],                  pl:'Editorial · Crítica',               s:'proyecto',   mail:'hola@ejemplo.co', web:'revistacauce.co',
+    bio:'Revista independiente de crítica cultural del suroccidente. Encargamos textos, fotografía e ilustración.',
+    about:'Publicamos ensayo corto, crítica de arte y crónica sobre lo que pasa culturalmente en Cali y el Valle. Un número por trimestre, en papel y digital, con una postura editorial clara: no cubrimos lo que ya cubren los medios grandes.',
+    trayectoria:'Cauce nació en 2020 como proyecto de un grupo de egresados de comunicación de la Universidad del Valle. Llevamos dieciséis números publicados y una red fija de colaboradores en las cuatro ciudades del suroccidente.'},
+  {c:'PER·011', n:'Lucía Arango',        u:'@lu.arango',        city:'Pereira',   p:['Pedagogía'],                  pl:'Danza contemporánea · Pedagogía',   s:'empleo',     mail:'hola@ejemplo.co', web:'instagram.com/lu.arango',
+    bio:'Intérprete y docente de danza contemporánea. Doce años de aula. Busco vinculación con institución o programa.',
+    about:'Enseño desde el cuerpo propio, no desde la copia de secuencias: trabajo mucho improvisación y composición antes de técnica pura, sobre todo con principiantes. Como intérprete me ha interesado siempre cruzar danza con artes visuales.',
+    trayectoria:'Formación en danza contemporánea en Bogotá, con estudios adicionales en improvisación en Argentina. Doce años dando clase, los últimos seis en un programa de extensión cultural que quedó suspendido tras los daños del sismo.'},
+  {c:'MZL·012', n:'Sonora Taller',       u:'@sonorataller',     city:'Manizales', p:['Música y sonido'],            pl:'Sonido · Música',                   s:'proyecto',   mail:'hola@ejemplo.co', web:'sonorataller.co',
+    bio:'Diseño sonoro, grabación de campo y música para pieza audiovisual y escénica.',
+    about:'Grabamos mucho sonido de campo en la región — mercados, ríos, tráfico, aves — y lo usamos como materia prima para bandas sonoras y piezas de sonido para teatro. Nos interesa el paisaje sonoro del Eje Cafetero como archivo, no solo como fondo.',
+    trayectoria:'El taller opera desde 2016. Hemos hecho diseño de sonido para cuatro montajes de teatro independiente y la banda sonora de dos documentales cortos rodados en la región.'},
+  {c:'PER·013', n:'Camilo Restrepo D.',  u:'@cam.restrepo',     city:'Pereira',   p:['Ilustración','Gráfica'],      pl:'Animación · Motion',                s:'disponible', mail:'hola@ejemplo.co', web:'instagram.com/cam.restrepo',
+    bio:'Animación 2D y motion para campañas, museos y contenido educativo.',
+    about:'Trabajo animación 2D cuadro a cuadro cuando el proyecto lo permite, y motion vectorial cuando el plazo es corto. Me gusta especialmente el contenido educativo: traducir algo técnico o abstracto en una secuencia que se entienda sin texto.',
+    trayectoria:'Estudié animación en la Universidad de Caldas. He trabajado motion para dos museos de la región, incluida una pieza para una exposición del Museo de Arte de Pereira antes del sismo, y hago freelance para agencias desde 2020.'},
+  {c:'CAL·014', n:'Colectiva Amarillo',  u:'@amarillo.co',      city:'Cali',      p:['Oficio'],                     pl:'Textil · Bordado',                  s:'obra',       mail:'hola@ejemplo.co', web:'instagram.com/amarillo.co',
+    bio:'Cinco mujeres bordando pieza a mano. Vendemos obra y hacemos encargos para marcas y escenografía.',
+    about:'Bordamos a mano sobre tela reciclada, con puntadas tradicionales del Pacífico que cada una trajo de su región de origen. Cada pieza lleva varias manos y varias semanas — no trabajamos rápido a propósito, es parte de lo que vendemos.',
+    trayectoria:'Nos conocimos en un taller comunitario en 2021 y decidimos seguir juntas como colectiva. Hemos hecho escenografía textil para dos montajes de teatro independiente y piezas de encargo para marcas de moda pequeñas de Cali y Bogotá.'}
+];
+
+const LABEL = {disponible:'Disponible', proyecto:'Por proyecto', obra:'Vende obra', empleo:'Busca empleo'};
+const $ = (s,r=document)=>r.querySelector(s);
+const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+
+/* ---------- movimiento ---------- */
+document.documentElement.classList.add('js');
+const mq = matchMedia('(prefers-reduced-motion: reduce)');
+let MOTION = !mq.matches;
+mq.addEventListener('change', e => { MOTION = !e.matches; });
+
+/* Revelado de imagen al entrar en pantalla. Cada marco se observa una vez. */
+const io = ('IntersectionObserver' in window) ? new IntersectionObserver(entries => {
+  entries.forEach(en => {
+    if(!en.isIntersecting) return;
+    en.target.classList.remove('will-reveal');
+    en.target.classList.add('is-revealed');
+    io.unobserve(en.target);
+  });
+}, {rootMargin:'0px 0px -6% 0px', threshold:.08}) : null;
+
+function scanReveals(scope){
+  $$('.obra__frame, .card__frame', scope).forEach((el, i) => {
+    if(el.dataset.rv) return;
+    el.dataset.rv = '1';
+    if(!MOTION || !io){ el.classList.add('is-revealed'); return; }
+    el.style.setProperty('--d', Math.min(i, 6) * 55 + 'ms');
+    el.classList.add('will-reveal');
+    io.observe(el);
+  });
+}
+
+function replay(el, cls){
+  if(!el || !MOTION) return;
+  el.classList.remove(cls);
+  void el.offsetWidth;          /* reinicia la animación */
+  el.classList.add(cls);
+}
+
+/* El número de pasos se calcula de la longitud real del texto, no se
+   deja fijo — así si algún día cambia la fecha o el copy, los pasos
+   del tipeo se ajustan solos sin volver a tocar el CSS. */
+function playTypewriter(){
+  const el = $('#idx-eyebrow');
+  if(!el) return;
+  el.style.animationTimingFunction = `steps(${el.textContent.length},end)`;
+  replay(el, 'is-typing');
+}
+
+/* ---------- navegación entre vistas ---------- */
+const VIEWS = ['indice','ficha','quienes','inscribete'];
+function go(view, index){
+  VIEWS.forEach(v => $('#v-'+v).hidden = (v !== view));
+  $$('.mainnav button').forEach(b => b.removeAttribute('aria-current'));
+  const nav = $(`.mainnav button[data-go="${view}"]`);
+  if(nav) nav.setAttribute('aria-current','page');
+  if(view === 'ficha') renderFicha(index);
+  if(view === 'inscribete') showGate();
+  if(view === 'indice') playTypewriter();
+  if($('#mobilemenu').classList.contains('is-open')) closeMenu();
+  window.scrollTo({top:0, behavior:'instant'});
+  const sec = $('#v-'+view);
+  replay(sec.querySelector('.shell'), 'enter');
+  scanReveals(sec);
+}
+$$('[data-go]').forEach(el => el.addEventListener('click', e => { e.preventDefault(); go(el.dataset.go); }));
+
+/* ---------- índice: filtros y búsqueda ---------- */
+const state = {city:new Set(), state:new Set(), pract:new Set(), q:''};
+let interacted = false;   /* true en cuanto el usuario filtra o busca */
+
+function matches(d){
+  if(state.city.size && !state.city.has(d.city)) return false;
+  if(state.state.size && !state.state.has(d.s)) return false;
+  if(state.pract.size && !d.p.some(p => state.pract.has(p))) return false;
+  if(state.q){
+    const hay = (d.n+' '+d.u+' '+d.pl+' '+d.p.join(' ')+' '+d.city).toLowerCase();
+    if(!hay.includes(state.q)) return false;
+  }
+  return true;
+}
+
+function render(){
+  const list = DATA.filter(matches);
+  const tb = $('#rows'); tb.innerHTML = '';
+  const cards = $('#cards'); cards.innerHTML = '';
+
+  list.forEach(d => {
+    const i = DATA.indexOf(d);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="c-code"><span class="code">${d.c}</span><span class="thumb-inline"></span></td>
+      <td class="c-name"><a href="#" data-i="${i}">${d.n}</a><span class="c-handle">${d.u}</span></td>
+      <td class="c-city"><span>${d.city}</span></td>
+      <td class="c-pract">${d.pl}</td>
+      <td class="c-state"><span class="state" data-s="${d.s}">${LABEL[d.s]}</span></td>`;
+    tr.addEventListener('mouseenter', () => preview(d, tr));
+    tr.addEventListener('click', e => {
+      if(e.target.closest('a')) return;   /* el enlace del nombre ya maneja su propio clic */
+      go('ficha', i);
+    });
+    tb.appendChild(tr);
+
+    const card = document.createElement('a');
+    card.href = '#'; card.dataset.i = i;
+    card.innerHTML = `
+      <div class="card__frame"></div>
+      <div class="card__name">${d.n}</div>
+      <div class="card__meta">${d.city} — ${d.pl}</div>
+      <div class="card__state"><span class="state" data-s="${d.s}">${LABEL[d.s]}</span></div>`;
+    cards.appendChild(card);
+  });
+
+  $('#empty').hidden = list.length > 0;
+
+  /* El resultado aparece escalonado solo cuando el usuario filtró:
+     en la primera carga ya lo cubre la entrada de la vista. */
+  if(interacted && MOTION){
+    [...$('#rows').children].forEach((tr, k) => {
+      if(k < 16) tr.style.setProperty('--d', k * 20 + 'ms');
+      tr.classList.add('row-in');
+    });
+    [...cards.children].forEach((c, k) => {
+      if(k < 12) c.style.setProperty('--d', k * 35 + 'ms');
+      c.classList.add('card-in');
+    });
+  }
+  scanReveals($('#v-indice'));
+  syncClear();
+  syncFilterUI();
+
+  $$('[data-i]').forEach(a => a.addEventListener('click', e => {
+    e.preventDefault(); go('ficha', +a.dataset.i);
+  }));
+}
+
+/* El botón solo existe cuando hay algo que quitar. Mientras está plegado
+   queda fuera del orden de tabulación, no es un objetivo invisible. */
+function syncClear(){
+  const any = state.city.size + state.state.size + state.pract.size > 0 || state.q !== '';
+  const wrap = $('#clearwrap');
+  if(wrap.dataset.on === String(any)) return;
+  wrap.dataset.on = String(any);
+  wrap.inert = !any;
+}
+
+/* Fuente única de verdad: state. Esta función refleja ese estado en
+   las TRES interfaces que pueden mostrarlo — los chips verticales de
+   escritorio, los chips disparadores de tablet/celular y los
+   checkboxes de la hoja — así da igual desde cuál se filtró, las
+   otras dos quedan al día si el usuario cambia de tamaño de pantalla
+   a mitad de sesión. */
+function syncFilterUI(){
+  $$('.filter[data-v]').forEach(b => {
+    const g = b.closest('[data-group]').dataset.group;
+    b.setAttribute('aria-pressed', state[g].has(b.dataset.v) ? 'true' : 'false');
+  });
+  $$('.sheetcheck').forEach(c => { c.checked = state[c.dataset.group].has(c.dataset.v); });
+  $$('.filtertrig-wrap').forEach(w => {
+    if(!state[w.dataset.group]) return;   /* red de seguridad: ver nota arriba del componente */
+    const n = state[w.dataset.group].size;
+    w.setAttribute('data-active', n > 0 ? 'true' : 'false');
+    const count = w.querySelector('.filtertrig__count');
+    count.textContent = n > 1 ? n : '';
+  });
+}
+
+/* Al recorrer la tabla rápido no queremos que el panel parpadee en cada fila:
+   la marca de fila es inmediata, el contenido espera 70 ms y cruza en fundido. */
+let pvTimer = null;
+function preview(d, tr){
+  $$('.reg tbody tr').forEach(r => r.classList.remove('is-active'));
+  if(tr) tr.classList.add('is-active');
+  clearTimeout(pvTimer);
+  pvTimer = setTimeout(() => {
+    const body = $('#pv-body');
+    if(!MOTION){ body.innerHTML = pvHTML(d); return; }
+    body.classList.add('is-out');
+    setTimeout(() => { body.innerHTML = pvHTML(d); body.classList.remove('is-out'); }, 110);
+  }, 70);
+}
+
+function pvHTML(d){
+  return `
+    <div class="preview__frame"></div>
+    <span class="code" style="display:block;margin-bottom:.35rem">${d.c}</span>
+    <div style="font-weight:500;letter-spacing:-.01em">${d.n}</div>
+    <div style="font-size:var(--fs-meta);color:var(--steel);margin:.15rem 0 .5rem">${d.city} — ${d.pl}</div>
+    <span class="state" data-s="${d.s}">${LABEL[d.s]}</span>
+    <p style="font-size:var(--fs-meta);color:var(--steel);line-height:1.5;margin:.8rem 0 0">${d.bio.slice(0,120)}…</p>`;
+}
+
+$$('.filter[data-v]').forEach(btn => btn.addEventListener('click', () => {
+  const group = btn.closest('[data-group]').dataset.group;
+  const v = btn.dataset.v;
+  state[group].has(v) ? state[group].delete(v) : state[group].add(v);
+  interacted = true; render();
+}));
+$('#clear').addEventListener('click', () => {
+  ['city','state','pract'].forEach(g => state[g].clear());
+  state.q = ''; $('#q').value = '';
+  interacted = true; render();
+});
+
+/* ---------- hoja de filtros (tablet/celular) ---------- */
+$$('.sheetcheck').forEach(c => c.addEventListener('change', () => {
+  c.checked ? state[c.dataset.group].add(c.dataset.v) : state[c.dataset.group].delete(c.dataset.v);
+  interacted = true; render();
+}));
+$$('.filtertrig__x').forEach(x => x.addEventListener('click', e => {
+  e.stopPropagation();   /* no abrir la hoja al limpiar solo esa categoría */
+  state[x.closest('.filtertrig-wrap').dataset.group].clear();
+  interacted = true; render();
+}));
+$('#sheet-clear').addEventListener('click', () => {
+  ['city','state','pract'].forEach(g => state[g].clear());
+  interacted = true; render();
+});
+
+const sheet = $('#filtersheet');
+let sheetOpener = null;
+function openSheet(e){
+  sheetOpener = e.currentTarget;
+  sheet.classList.add('is-open');
+  sheet.setAttribute('aria-hidden','false');
+  $$('.filtertrig').forEach(t => t.setAttribute('aria-expanded','true'));
+  document.body.style.overflow = 'hidden';
+  $('#sheet-close').focus();
+  /* Entrada escalonada de las filas — se reinicia en cada apertura con
+     el mismo truco de siempre: quitar la clase, forzar reflow, volver
+     a ponerla. Sin esto el segundo tap ya no reanima nada. */
+  if(MOTION){
+    $$('.sheet__opt').forEach((opt, i) => {
+      opt.classList.remove('is-in');
+      void opt.offsetWidth;
+      opt.style.setProperty('--d', Math.min(i, 12) * 22 + 'ms');
+      opt.classList.add('is-in');
+    });
+  }
+}
+function closeSheet(){
+  sheet.classList.remove('is-open');
+  sheet.setAttribute('aria-hidden','true');
+  $$('.filtertrig').forEach(t => t.setAttribute('aria-expanded','false'));
+  document.body.style.overflow = '';
+  if(sheetOpener){ sheetOpener.focus(); sheetOpener = null; }
+}
+$$('.filtertrig').forEach(t => t.addEventListener('click', openSheet));
+$('#sheet-close').addEventListener('click', closeSheet);
+$('.sheet__scrim').addEventListener('click', closeSheet);
+$('#sheet-apply').addEventListener('click', closeSheet);
+addEventListener('keydown', e => { if(e.key === 'Escape' && sheet.classList.contains('is-open')) closeSheet(); });
+
+/* ---------- hoja de "otros registros" (tablet/celular) ---------- */
+const peopleSheet = $('#peoplesheet');
+let peopleSheetOpener = null;
+function openPeopleSheet(e){
+  peopleSheetOpener = e.currentTarget;
+  peopleSheet.classList.add('is-open');
+  peopleSheet.setAttribute('aria-hidden','false');
+  $('#people-trigger').setAttribute('aria-expanded','true');
+  document.body.style.overflow = 'hidden';
+  $('#peoplesheet-close').focus();
+  if(MOTION){
+    $$('#peoplesheet-body .sheet__opt').forEach((opt, i) => {
+      opt.classList.remove('is-in');
+      void opt.offsetWidth;
+      opt.style.setProperty('--d', Math.min(i, 14) * 18 + 'ms');
+      opt.classList.add('is-in');
+    });
+  }
+}
+function closePeopleSheet(){
+  peopleSheet.classList.remove('is-open');
+  peopleSheet.setAttribute('aria-hidden','true');
+  $('#people-trigger').setAttribute('aria-expanded','false');
+  document.body.style.overflow = '';
+  if(peopleSheetOpener){ peopleSheetOpener.focus(); peopleSheetOpener = null; }
+}
+$('#people-trigger').addEventListener('click', openPeopleSheet);
+$('#peoplesheet-close').addEventListener('click', closePeopleSheet);
+$('#peoplesheet .sheet__scrim').addEventListener('click', closePeopleSheet);
+addEventListener('keydown', e => { if(e.key === 'Escape' && peopleSheet.classList.contains('is-open')) closePeopleSheet(); });
+
+/* ---------- menú de celular (hamburguesa) ---------- */
+const mmenu = $('#mobilemenu');
+function openMenu(){
+  mmenu.classList.add('is-open');
+  mmenu.setAttribute('aria-hidden','false');
+  $('#menu-open').setAttribute('aria-expanded','true');
+  document.body.style.overflow = 'hidden';
+  $('#menu-close').focus();
+}
+function closeMenu(){
+  mmenu.classList.remove('is-open');
+  mmenu.setAttribute('aria-hidden','true');
+  $('#menu-open').setAttribute('aria-expanded','false');
+  document.body.style.overflow = '';
+  $('#menu-open').focus();
+}
+$('#menu-open').addEventListener('click', openMenu);
+$('#menu-close').addEventListener('click', closeMenu);
+addEventListener('keydown', e => { if(e.key === 'Escape' && mmenu.classList.contains('is-open')) closeMenu(); });
+
+/* La búsqueda filtra al ritmo de la escritura, pero el escalonado se
+   salta mientras se teclea: reanimar en cada pulsación se siente lento. */
+let qTimer = null;
+$('#q').addEventListener('input', e => {
+  state.q = e.target.value.trim().toLowerCase();
+  interacted = false; render();
+  clearTimeout(qTimer);
+  qTimer = setTimeout(() => { interacted = true; }, 400);
+});
+
+$$('.viewtoggle button').forEach(b => b.addEventListener('click', () => {
+  $$('.viewtoggle button').forEach(x => x.setAttribute('aria-pressed','false'));
+  b.setAttribute('aria-pressed','true');
+  const grid = b.dataset.mode === 'cuadricula';
+  $('#cards').classList.toggle('is-on', grid);
+  $('.reg-wrap').classList.toggle('is-off', grid);
+  interacted = true; render();
+}));
+
+/* ---------- ficha ---------- */
+function renderFicha(i){
+  if(typeof i !== 'number') i = 0;
+  const d = DATA[i];
+  $('#f-code').textContent = `${d.c} · ${d.city}`;
+  $('#f-name').textContent = d.n;
+  $('#f-bio').textContent = d.bio;
+  $('#f-about').textContent = d.about;
+  $('#f-trayectoria').textContent = d.trayectoria;
+  $('#f-datos').innerHTML = `
+    <div><dt>Estado</dt><dd><span class="state" data-s="${d.s}">${LABEL[d.s]}</span></dd></div>
+    <div><dt>Práctica</dt><dd>${d.pl}</dd></div>
+    <div><dt>Perfil</dt><dd>${d.u}</dd></div>
+    <div><dt>Correo</dt><dd><a href="mailto:${d.mail}">${d.mail}</a></dd></div>
+    <div><dt>Ciudad</dt><dd>${d.city}, Colombia</dd></div>
+    <div><dt>Web</dt><dd><a href="#">${d.web}</a></dd></div>`;
+  $('#f-cta1').href = `mailto:${d.mail}`;
+
+  const rail = $('#rail-people'); rail.innerHTML = '';
+  DATA.forEach((p, j) => {
+    const li = document.createElement('li');
+    const a = document.createElement('a');
+    a.href = '#'; a.textContent = p.u;
+    if(j === i) a.setAttribute('aria-current','page');
+    a.addEventListener('click', e => { e.preventDefault(); go('ficha', j); });
+    li.appendChild(a); rail.appendChild(li);
+  });
+
+  /* Misma lista, como filas de la hoja para tablet/celular — tocar un
+     nombre navega directo y cierra, sin paso de "aplicar" de por medio. */
+  $('#people-count').textContent = DATA.length - 1;
+  const body = $('#peoplesheet-body'); body.innerHTML = '';
+  DATA.forEach((p, j) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'sheet__opt sheet__personrow';
+    if(j === i) btn.setAttribute('aria-current','page');
+    btn.innerHTML = `<span class="code">${p.c}</span><span>${p.n}</span>`;
+    btn.addEventListener('click', () => { go('ficha', j); closePeopleSheet(); });
+    body.appendChild(btn);
+  });
+
+  const prev = (i - 1 + DATA.length) % DATA.length, next = (i + 1) % DATA.length;
+  $('#f-prev').querySelector('span').textContent = DATA[prev].n;
+  $('#f-next').querySelector('span').textContent = DATA[next].n;
+  $('#f-prev').onclick = e => { e.preventDefault(); go('ficha', prev); };
+  $('#f-next').onclick = e => { e.preventDefault(); go('ficha', next); };
+}
+
+/* ---------- formulario ---------- */
+
+/* Flujo de entrada: "no tengo cuenta, me inscribo" vs "ya tengo
+   cuenta, inicio sesión". Es el mismo <form> en los dos casos — no
+   hay un objeto "cuenta" aparte, la ficha pública ES la cuenta.
+   formMode decide qué copy y qué mensaje final usar al enviar. */
+let formMode = 'signup';
+
+function showGate(){
+  $('#gate').hidden = false;
+  $('#loginstep').hidden = true;
+  $('#form').hidden = true;
+  $('#done').hidden = true;
+  $('#edit-note').hidden = true;
+  $('#ins-h1').textContent = 'Inscríbete en el índice';
+  $('#ins-lead').textContent = 'Toma unos cinco minutos. Revisamos tu ficha en menos de 2 horas y te escribimos al correo con la decisión.';
+}
+
+function showSignup(){
+  formMode = 'signup';
+  resetForm();
+  $('#gate').hidden = true;
+  $('#loginstep').hidden = true;
+  $('#edit-note').hidden = true;
+  $('#form').hidden = false;
+  $('#form-submit').textContent = 'Enviar registro';
+  $('#ins-h1').textContent = 'Inscríbete en el índice';
+  $('#ins-lead').textContent = 'Toma unos cinco minutos. Revisamos tu ficha en menos de 2 horas y te escribimos al correo con la decisión.';
+}
+
+function showLogin(){
+  $('#gate').hidden = true;
+  $('#loginstep').hidden = false;
+  $('#form').hidden = true;
+}
+
+function showEdit(){
+  /* Maqueta sin backend: cualquier correo entra a un registro de
+     demostración, no a una cuenta real verificada. */
+  const d = DATA[0];
+  formMode = 'edit';
+  resetForm();
+  prefillForm(d);
+  $('#loginstep').hidden = true;
+  $('#form').hidden = false;
+  $('#form-submit').textContent = 'Guardar cambios';
+  $('#ins-h1').textContent = 'Edita tu ficha';
+  $('#ins-lead').textContent = 'Actualiza lo que necesites. Los cambios quedan visibles de inmediato.';
+  $('#edit-note').hidden = false;
+  $('#edit-note').textContent = `Estás editando la ficha de ${d.n} (registro de ejemplo). La foto y la obra no se recargan en esta maqueta — vuelve a subirlas solo si quieres reemplazarlas.`;
+}
+
+function resetForm(){
+  $('#form').reset();
+  $$('#form .chip').forEach(c => c.setAttribute('aria-pressed', 'false'));
+  fotoInput.value = '';
+  $('#photo-preview').hidden = true; $('#photo-preview').removeAttribute('src');
+  $('#photobox').classList.remove('has-photo');
+  $('#photo-clear').hidden = true;
+  $('#fp-frame').style.backgroundImage = '';
+  obraFiles = [];
+  renderObraTiles();
+  updateFormPreview();
+}
+
+function prefillForm(d){
+  $('#i-nombre').value = d.n;
+  $('#i-user').value = d.u;
+  $('#i-ciudad').value = d.city;
+  $('#i-estado').value = d.s;
+  $('#i-mail').value = d.mail;
+  $('#i-web').value = d.web;
+  $('#i-bio').value = d.bio;
+  $('#i-about').value = d.about;
+  $('#i-trayectoria').value = d.trayectoria;
+  $$('#form .chip').forEach(c => c.setAttribute('aria-pressed', d.p.includes(c.textContent) ? 'true' : 'false'));
+  updateFormPreview();
+}
+
+$('#gate-signup').addEventListener('click', showSignup);
+$('#gate-login').addEventListener('click', showLogin);
+$('#login-back').addEventListener('click', showGate);
+$('#login-go').addEventListener('click', showEdit);
+$('#form-back').addEventListener('click', showGate);
+
+/* Foto de perfil: un solo archivo. Se lee con FileReader y se muestra
+   como data URL — nada se sube a ningún lado todavía, es solo la
+   vista previa local del navegador. */
+const fotoInput = $('#i-foto');
+fotoInput.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const url = ev.target.result;
+    $('#photo-preview').src = url;
+    $('#photo-preview').hidden = false;
+    $('#photobox').classList.add('has-photo');
+    $('#photo-clear').hidden = false;
+    $('#fp-frame').style.backgroundImage = `url(${url})`;
+    updateFormPreview();
+  };
+  reader.readAsDataURL(file);
+});
+$('#photo-clear').addEventListener('click', e => {
+  e.preventDefault(); e.stopPropagation();   /* no reabrir el selector al hacer clic en la X */
+  fotoInput.value = '';
+  $('#photo-preview').hidden = true; $('#photo-preview').removeAttribute('src');
+  $('#photobox').classList.remove('has-photo');
+  $('#photo-clear').hidden = true;
+  $('#fp-frame').style.backgroundImage = '';
+});
+
+/* Obra: hasta 6 archivos, cada uno con su pie de foto — la ficha
+   muestra un pie por imagen, así que el formulario tiene que poder
+   capturarlo. El orden del arreglo es el orden del portafolio;
+   índice 0 = portada. Todo en memoria del navegador. */
+let obraFiles = [];   /* [{url, caption}] */
+const MAX_OBRAS = 6;
+
+function renderObraTiles(){
+  const wrap = $('#obratiles');
+  const rows = obraFiles.map((o, i) => `
+    <div class="obrarow${i===0 ? ' is-cover' : ''}" data-idx="${i}">
+      <span class="obrarow__handle" draggable="true" tabindex="0" role="button" aria-label="Arrastrar para reordenar, o usar las flechas arriba y abajo" title="Arrastrar, o usar las flechas arriba/abajo">
+        <svg viewBox="0 0 14 10" aria-hidden="true" focusable="false"><line x1="1" y1="1" x2="13" y2="1"/><line x1="1" y1="5" x2="13" y2="5"/><line x1="1" y1="9" x2="13" y2="9"/></svg>
+      </span>
+      <span class="obrarow__thumb">
+        <img src="${o.url}" alt="" draggable="false">
+        ${i===0 ? '<span class="obrarow__badge">Portada</span>' : ''}
+      </span>
+      <input type="text" class="obrarow__cap" data-idx="${i}" maxlength="120"
+        placeholder="Título y detalle — ej. Serie sin título, impresión digital, 2025" value="${o.caption.replace(/"/g,'&quot;')}">
+      <button type="button" class="obrarow__x" aria-label="Quitar esta imagen">
+        <svg viewBox="0 0 12 12" aria-hidden="true" focusable="false"><line x1="1.5" y1="1.5" x2="10.5" y2="10.5"/><line x1="10.5" y1="1.5" x2="1.5" y2="10.5"/></svg>
+      </button>
+    </div>`).join('');
+
+  const addRow = obraFiles.length < MAX_OBRAS ? `
+    <label class="obraadd">
+      <input type="file" id="i-obra" class="file-input" accept="image/*" multiple>
+      <span class="code" style="font-size:.6875rem">+ Añadir imágenes</span>
+    </label>` : '';
+
+  wrap.innerHTML = rows + addRow;
+  $('#obra-count').textContent = `(${obraFiles.length}/${MAX_OBRAS})`;
+
+  /* El pie de foto se guarda al teclear, sin volver a dibujar la
+     lista — redibujar en cada tecla le quitaría el foco al campo. */
+  wrap.querySelectorAll('.obrarow__cap').forEach(inp => inp.addEventListener('input', () => {
+    obraFiles[+inp.dataset.idx].caption = inp.value;
+  }));
+
+  wrap.querySelectorAll('.obrarow__x').forEach(btn => btn.addEventListener('click', () => {
+    const i = +btn.closest('.obrarow').dataset.idx;
+    obraFiles.splice(i, 1);
+    renderObraTiles();
+    updateFormPreview();
+  }));
+
+  /* Arrastrar y soltar: API nativa del navegador, sin librerías.
+     El origen del arrastre es solo la manija — así el clic en el
+     campo de texto sigue siendo un clic normal, no un arrastre.
+     dragFromIdx vive en el cierre de este render. */
+  let dragFromIdx = null;
+  wrap.querySelectorAll('.obrarow').forEach(row => {
+    row.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if(+row.dataset.idx !== dragFromIdx) row.classList.add('is-over');
+    });
+    row.addEventListener('dragleave', () => row.classList.remove('is-over'));
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      row.classList.remove('is-over');
+      const toIdx = +row.dataset.idx;
+      if(dragFromIdx === null || dragFromIdx === toIdx) return;
+      const [moved] = obraFiles.splice(dragFromIdx, 1);
+      obraFiles.splice(toIdx, 0, moved);
+      renderObraTiles();
+      updateFormPreview();
+    });
+  });
+  wrap.querySelectorAll('.obrarow__handle').forEach(handle => {
+    handle.addEventListener('dragstart', e => {
+      const row = handle.closest('.obrarow');
+      dragFromIdx = +row.dataset.idx;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(dragFromIdx)); /* requerido por Firefox */
+      requestAnimationFrame(() => row.classList.add('is-dragging'));
+    });
+    handle.addEventListener('dragend', () => {
+      wrap.querySelectorAll('.obrarow').forEach(r => r.classList.remove('is-dragging', 'is-over'));
+      dragFromIdx = null;
+    });
+    /* Reordenar con teclado, para quien no usa mouse: la manija es
+       enfocable, así que tiene que responder a algo. */
+    handle.addEventListener('keydown', e => {
+      const i = +handle.closest('.obrarow').dataset.idx;
+      const swapWith = e.key === 'ArrowUp' ? i - 1 : e.key === 'ArrowDown' ? i + 1 : null;
+      if(swapWith === null || swapWith < 0 || swapWith >= obraFiles.length) return;
+      e.preventDefault();
+      [obraFiles[i], obraFiles[swapWith]] = [obraFiles[swapWith], obraFiles[i]];
+      renderObraTiles();
+      updateFormPreview();
+      $(`#obratiles .obrarow[data-idx="${swapWith}"] .obrarow__handle`)?.focus();
+    });
+  });
+
+  const addInput = $('#i-obra');
+  if(addInput) addInput.addEventListener('change', e => {
+    const room = MAX_OBRAS - obraFiles.length;
+    const files = [...e.target.files].slice(0, room);
+    if(!files.length) return;
+    Promise.all(files.map(file => new Promise(res => {
+      const reader = new FileReader();
+      reader.onload = ev => res(ev.target.result);
+      reader.readAsDataURL(file);
+    }))).then(urls => {
+      obraFiles.push(...urls.map(url => ({url, caption:''})));
+      renderObraTiles();
+    });
+  });
+}
+renderObraTiles();
+
+/* Previsualización en vivo en el rail: refleja nombre, ciudad, estado,
+   prácticas seleccionadas y foto de perfil mientras se llena el form. */
+function updateFormPreview(){
+  const nombre = $('#i-nombre').value.trim() || 'Tu nombre';
+  const ciudad = $('#i-ciudad').value;
+  const pract = $$('#form .chip[aria-pressed="true"]').map(c => c.textContent).slice(0, 2).join(' · ') || 'práctica';
+  const estado = $('#i-estado').value;
+  $('#fp-name').textContent = nombre;
+  $('#fp-meta').textContent = `${ciudad} — ${pract}`;
+  $('#fp-state').dataset.s = estado;
+  $('#fp-state').textContent = LABEL[estado];
+}
+$('#form').addEventListener('input', updateFormPreview);
+$('#form').addEventListener('change', updateFormPreview);
+updateFormPreview();
+
+$$('.chip').forEach(c => c.addEventListener('click', () => {
+  c.setAttribute('aria-pressed', c.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+  updateFormPreview();
+}));
+$('#form').addEventListener('submit', e => {
+  e.preventDefault();
+  $('#form').hidden = true; $('#done').hidden = false;
+  if(formMode === 'edit'){
+    $('#done-title').textContent = 'Cambios guardados.';
+    $('#done-body').textContent = 'Tu ficha ya quedó actualizada en el índice.';
+  } else {
+    $('#done-title').textContent = 'Solicitud enviada.';
+    $('#done-body').textContent = 'La revisamos en menos de 2 horas y te escribimos al correo con la decisión. Si tu ficha queda aceptada, vas a poder volver aquí mismo para editarla cuando quieras.';
+  }
+});
+
+/* ---------- retícula y tira de especificación ---------- */
+const ov = $('#overlay-in');
+for(let i = 0; i < 12; i++){
+  const s = document.createElement('span');
+  s.style.setProperty('--d', i * 22 + 'ms');
+  ov.appendChild(s);
+}
+function toggleGrid(){
+  const on = $('#overlay').classList.toggle('is-on');
+  $('#gridbtn').setAttribute('aria-pressed', String(on));
+}
+$('#gridbtn').addEventListener('click', toggleGrid);
+addEventListener('keydown', e => {
+  if(e.key.toLowerCase() === 'g' && !/input|textarea|select/i.test(e.target.tagName)) toggleGrid();
+});
+
+function tramo(w){
+  if(w >= 7680) return '8K';
+  if(w >= 5120) return '5K';
+  if(w >= 3840) return '4K';
+  if(w >= 2560) return 'QHD+';
+  if(w >= 1600) return 'XL';
+  if(w >= 1100) return 'L';
+  if(w >= 820)  return 'M';
+  return 'S';
+}
+function spec(){
+  const w = window.innerWidth;
+  const root = getComputedStyle(document.documentElement).fontSize;
+  $('#specstrip').innerHTML = `Viewport <b>${w}</b> · Raíz <b>${root}</b> · DPR <b>${window.devicePixelRatio}</b> · Tramo <b>${tramo(w)}</b>`;
+}
+addEventListener('resize', spec);
+
+/* La cabecera se asienta al despegar del tope. Solo cambia color y desenfoque:
+   nada de encoger, que desplazaría el contenido de abajo. */
+const mast = $('.masthead');
+let stuck = false;
+addEventListener('scroll', () => {
+  const now = scrollY > 24;
+  if(now !== stuck){ stuck = now; mast.classList.toggle('is-stuck', now); }
+}, {passive:true});
+
+/* Altura real de la cabecera, para que la barra de filtros fija (en
+   tablet/celular) se pegue justo debajo — la nav puede envolver a dos
+   líneas en pantallas angostas, así que esto no puede ser un número
+   fijo en CSS. */
+function setMastheadHeight(){
+  document.documentElement.style.setProperty('--mh', mast.offsetHeight + 'px');
+}
+addEventListener('resize', setMastheadHeight);
+setMastheadHeight();
+
+render(); spec();
+replay($('#v-indice .shell'), 'enter');
+scanReveals($('#v-indice'));
+playTypewriter();
+</script>
+</body>
+</html>
